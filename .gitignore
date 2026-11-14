@@ -1,0 +1,15 @@
+# macOS metadata
+.DS_Store
+
+# MATLAB and Simulink generated files
+*.asv
+*.autosave
+*.slxc
+*.slx.bak
+slprj/
+codegen/
+
+# Regenerated experiment outputs and local authoring intermediates
+/results/
+/tmp/
+*.zip
