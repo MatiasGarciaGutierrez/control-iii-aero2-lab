@@ -27,4 +27,5 @@
 - `setup_project.m` configures explicit project paths. Avoid recursively adding the repository or the original course directory to the MATLAB path.
 - Put reproducible experiment scripts and numerical acceptance checks in `validation/` as features are built. Test the behavior relevant to each change.
 - Store generated raw data and exports in ignored `results/`. Commit only selected evidence to `docs/figures/` with its explanation.
+- Update `docs/report.md` as each feature is implemented. Show the relevant Simulink blocks, input settings, scopes and measured outcomes. Clearly distinguish actual UI screenshots from diagram exports and plots of logged signals.
 - Report simulation results separately from hardware results. Experimental validation requires professor approval and the actual device interface and limits.
