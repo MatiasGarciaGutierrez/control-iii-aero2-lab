@@ -382,3 +382,180 @@ Question 2 meets the intended simulation objectives: unchanged gains, a verified
 The half-step saturation run recovers in **0.572 s**, versus 0.570 s at the supplied step. Independent single-motor tests keep the uncommanded motor at rest, and the Question 1 regression suite still passes. Code Analyzer reports no issues in the four new functions. The R2021a export runs in R2024b after clearing the workspace, with finite recorded signals; actual R2021a execution remains unverified. All five course files are byte-identical to the course baseline.
 
 The native scopes default to a 1 s time span for the nominal experiment. If manually running the 5 s stress test, change their Time span to 5 s to view the full transient. The exported recovery figure already shows the complete 5 s record.
+
+## Question 3 — Mechanical feedback linearization
+
+### Objective and modeling assumption
+
+The third item in [Part II of the course guide](../course/Automatic_Control_III_Computer_Room_II.pdf), page 6, asks us to assume that the motor loops track perfectly, so $\omega=\omega_d$, and treat desired rotor speeds as the new inputs. We must linearize the yaw/pitch dynamics, identify the resulting states and determine the validity range. This stage does not yet design the 3 s position controller; that is Question 4.
+
+Use the signal order
+
+$$q=\begin{bmatrix}\psi\\\theta\end{bmatrix},\qquad
+\dot q=\begin{bmatrix}\dot\psi\\\dot\theta\end{bmatrix},\qquad
+\omega_d=\begin{bmatrix}\omega_{m,d}\\\omega_{t,d}\end{bmatrix}.$$
+
+Here yaw and pitch describe the AERO 2 body's orientation; rotor speeds describe propeller spin. Perfect tracking removes the two motor states from this particular test bench. Its mechanical state is
+
+$$x=\begin{bmatrix}q\\\dot q\end{bmatrix}
+=\begin{bmatrix}\psi&\theta&\dot\psi&\dot\theta\end{bmatrix}^{T}.$$
+
+The full voltage-driven plant still has six states. We retain the PI/IP models for later cascade validation rather than pretending that their measured delay has disappeared physically.
+
+### Derivation of the inverse
+
+From the simplified course model on page 5, with zero mechanical damping:
+
+$$M_q(q)\ddot q+c_q(q,\dot q)+g_q(q)=\Gamma(\theta)s,$$
+
+$$s=\begin{bmatrix}\omega_m|\omega_m|\\\omega_t|\omega_t|\end{bmatrix}.$$
+
+The signed squared speed is essential: negative rotor speed reverses the modeled torque. Squaring speed without its sign would lose that behavior.
+
+Using the supplied parameters,
+
+$$M_q=\begin{bmatrix}
+J_\psi\cos^2\theta+j_\psi\sin^2\theta&0\\0&J_\theta
+\end{bmatrix},$$
+
+$$c_q=\begin{bmatrix}
+-(J_\psi-j_\psi)\sin(2\theta)\dot\theta\dot\psi\\
+\tfrac12(J_\psi-j_\psi)\sin(2\theta)\dot\psi^2
+\end{bmatrix},\qquad
+ g_q=\begin{bmatrix}0\\G\sin\theta\end{bmatrix},$$
+
+$$\Gamma(\theta)=\begin{bmatrix}\cos\theta&0\\0&1\end{bmatrix}
+\begin{bmatrix}-k_t&Lk_f\\Lk_f&k_t\end{bmatrix}.$$
+
+Introduce a virtual acceleration input $a=[a_\psi,a_\theta]^T$ and request the torque needed for $\ddot q=a$:
+
+$$\tau_d=M_q a+c_q+g_q.$$
+
+Solve for the signed squared rotor speeds, then invert each component:
+
+$$\boxed{s=\Gamma(\theta)\backslash\left(M_q a+c_q+g_q\right)},$$
+
+$$\boxed{\omega_d=\operatorname{sign}(s)\sqrt{|s|}}.$$
+
+The operations in the second box are componentwise. `matlab/mechanics/aero2_feedback_linearization.m` implements a matrix solve, not an explicitly calculated inverse. At $s_i=0$, `sign(0)*sqrt(0)` returns exactly zero without division by speed.
+
+Substitute the result into the original mechanical equation:
+
+$$\ddot q=M_q^{-1}\left[\Gamma s-c_q-g_q\right]
+=M_q^{-1}\left[M_q a+c_q+g_q-c_q-g_q\right]=a.$$
+
+Gravity, velocity coupling and rotor cross-axis coupling are canceled in this exact model. A zero requested acceleration can therefore require nonzero rotor speeds: the controller may need to balance gravity or velocity-dependent torques.
+
+### Linearized states and dynamics
+
+The mechanical state coordinates already contain the output and its first derivative, so choose $z=[q^T,\dot q^T]^T=x$. The resulting system is two double integrators:
+
+$$\dot z=
+\underbrace{\begin{bmatrix}0_{2\times2}&I_2\\0_{2\times2}&0_{2\times2}\end{bmatrix}}_{A}z+
+\underbrace{\begin{bmatrix}0_{2\times2}\\I_2\end{bmatrix}}_{B}a,
+\qquad q=\underbrace{\begin{bmatrix}I_2&0_{2\times2}\end{bmatrix}}_C z.$$
+
+Equivalently, $\ddot\psi=a_\psi$ and $\ddot\theta=a_\theta$. In the signed squared-speed input coordinates, the vector relative degree is $(2,2)$ and accounts for all four ideal mechanical states; there are no remaining internal mechanical zero dynamics in this reduced model. The motor dynamics have been assumed ideal, not proven absent in the real system.
+
+This is not a stabilizing position controller. With $a=0$, existing angular velocities remain constant. Question 4 will choose $a$ using angle errors and measured angular velocities.
+
+### Validity and physical feasibility
+
+1. **Mechanical inertia.** Both diagonal inertia terms are positive for every pitch because the supplied inertias are positive. Inverting $M_q$ introduces no pitch singularity here.
+2. **Rotor torque map.** Its determinant is
+
+   $$\det\Gamma(\theta)=-\cos\theta\left(k_t^2+(Lk_f)^2\right).$$
+
+   Thus the inverse fails at $\theta=\pi/2+k\pi$. Near those pitches, large rotor commands may be needed even before the matrix becomes singular. Our implementation uses the conservative **simulation envelope** $|\theta|\le60^\circ$; leaving it raises an assertion and stops the run. This is not an approved hardware travel limit.
+3. **Zero rotor speed.** The signed square root is continuous and defined at zero, so the algebraic cancellation remains evaluable there. Its derivative is unbounded at zero. Consequently, the input transformation is not a smooth diffeomorphism through zero speed. The smooth local feedback interpretation in the course linearization theory applies away from zero rotor speeds, with $\cos\theta\ne0$. Passing through zero also challenges the ideal instantaneous motor-tracking assumption.
+4. **Actuator feasibility.** The inverse does not enforce motor voltage limits. A constant rotor command must at least satisfy $|5.78\omega_d/96.532|\le24$ V in the nominal motor model. Dynamic tracking additionally requires $|\dot\omega_d+5.78\omega_d|\le96.532(24)$; steps in ideal rotor command cannot be followed instantaneously by finite-voltage motors. These are checks for later cascade work, not limits silently applied to this ideal inverse.
+5. **Model and measurement accuracy.** Exact cancellation assumes the supplied simplified parameters and exact angles/rates. Noise, parameter errors, unmodeled effects and finite motor bandwidth will produce residual acceleration errors in the complete system.
+
+The chosen envelope avoids the pitch singularity; it does not guarantee actuator feasibility or hardware safety for arbitrary virtual accelerations.
+
+### Implementation and visible simulation configuration
+
+| File | Role |
+|---|---|
+| `matlab/parameters/aero2_mechanical_parameters.m` | Supplied mechanical constants, simulation envelope, initial state and pulse amplitudes |
+| `matlab/mechanics/aero2_mechanical_terms.m` | Computes the inertia, velocity terms, gravity and rotor torque map |
+| `matlab/mechanics/aero2_feedback_linearization.m` | Matrix solve, signed square root and pitch-envelope assertion |
+| `matlab/build_feedback_linearization.m` | Builds the ideal-speed mechanical Simulink test bench and R2021a export |
+| `validation/validate_feedback_linearization.m` | Independent course-equation substitution, time simulation and envelope-stop tests |
+| `validation/export_feedback_linearization_figures.m` | Exports the actual diagram and plots of logged Scope signals |
+
+`simulink/aero2_mechanical_linearization.slx` contains a dedicated **Mechanical inverse** MATLAB Function block and **Ideal-speed course mechanics** block. The inverse embeds the three pure MATLAB functions so that the saved model does not depend on their external path. The plant block embeds the original course dynamics code unchanged except for a renamed local entry point. It supplies the computed rotor speeds algebraically, then retains only the four mechanical derivatives; it neither integrates the discarded motor derivatives nor simulates motor voltages. The new working model uses ideal state measurements, rather than the original sensor blocks, consistently with the derivation.
+
+The Integrator block stores the four-state mechanical vector; a Demux separates angles and rates for feedback. The experiment commands **accelerations**, not desired positions or motor voltages:
+
+| Setting | Value |
+|---|---|
+| Initial yaw/pitch | 0.1 / 0.2 rad |
+| Initial yaw/pitch rates | -0.05 / +0.04 rad/s |
+| Yaw virtual acceleration | +0.15 rad/s² from 0.2 to 0.6 s |
+| Pitch virtual acceleration | -0.10 rad/s² from 0.2 to 0.6 s |
+| Pulse Generator settings | Period 10 s, width 4%, phase delay 0.2 s, continuous sample time 0 |
+| Solver | Fixed-step forward Euler, 0.002 s |
+| Stop time | 2 s |
+| Pitch envelope | ±60°, enforced inside the inverse |
+
+The nonzero initial pitch and rates exercise compensation beyond the rest configuration. Acceleration pulse width is `10 × 4/100 = 0.4 s`. Double-click the two Pulse Generator blocks to inspect or edit the virtual inputs; change `X0` in the model workspace for initial conditions.
+
+| Scope | What it shows |
+|---|---|
+| Acceleration scope | First vector port: requested yaw/pitch acceleration; second: acceleration recovered by the course mechanics |
+| Angle scope | Actual yaw/pitch angles |
+| Rate scope | Actual yaw/pitch angular velocities |
+| Rotor command scope | Main/tail desired rotor speeds, assumed perfectly tracked |
+| Residual scope | Requested minus recovered yaw/pitch acceleration |
+
+`out.linearization_data` records 14 columns: requested acceleration (1–2), recovered acceleration (3–4), yaw/pitch (5–6), angular rates (7–8), main/tail rotor commands (9–10), signed squared speeds (11–12), acceleration residuals (13–14). Each vector follows yaw/pitch order except rotor quantities, which follow main/tail order.
+
+![Actual ideal-speed feedback-linearization Simulink diagram](figures/feedback_linearization_diagram.png)
+
+### Validation method and reproduction
+
+```matlab
+project = setup_project;
+model = build_feedback_linearization;
+checks = validate_feedback_linearization;
+export_feedback_linearization_figures;
+open_system(model);
+open_system([model '/Acceleration scope']);
+open_system([model '/Angle scope']);
+open_system([model '/Rotor command scope']);
+open_system([model '/Residual scope']);
+out = sim(model);
+```
+
+Rebuilding is optional for the saved model. The model builder is the source of lasting diagram changes. The original course files remain untouched.
+
+The validation script extracts the original course dynamics into a temporary oracle function. Across 180 combinations of yaw, pitch (including ±60°), angular velocities and virtual accelerations, it substitutes the inverse's computed speeds into that independent implementation and checks acceleration error below 1e-10 rad/s². It also checks $\omega_d|\omega_d|=s$, exact zero handling and rejection of an initially out-of-envelope request. The embedded saved inverse is checked against its MATLAB source, and the saved plant is checked against the original course dynamics.
+
+The time simulation compares recovered acceleration with the pulse input and compares angles with the analytical double-integrator response. A 0.001 s rerun checks improved integration accuracy. A separate test starts just inside +60° with outward pitch velocity and verifies that crossing the envelope stops the simulation with an explicit diagnostic. Raw runs and the numerical checks CSV are generated in ignored `results/`.
+
+![Requested/recovered acceleration, integrated angles and cancellation residuals](figures/feedback_linearization_response.png)
+
+![Computed main and tail rotor-speed commands](figures/feedback_linearization_rotors.png)
+
+These figures are exports of the actual model and logged signals, not native Scope-window screenshots. No position-settling claim is made in Question 3.
+
+### Measured results and conclusion
+
+| Check | Measured result | Acceptance |
+|---|---:|---|
+| Independent course-equation substitutions | 180 cases | All finite and within the selected envelope |
+| Maximum recovered acceleration error | 2.2204e-16 rad/s² | Below 1e-10 rad/s² |
+| Maximum signed square reconstruction error | 1.4552e-11 (rad/s)² | Below 1e-8 (rad/s)² |
+| Maximum dynamic acceleration residual | 5.5511e-17 rad/s² | Below 1e-10 rad/s² |
+| Maximum angle discrepancy from analytical double integrators, 0.002 s step | 6.0e-5 rad | Below 0.001 rad |
+| Maximum angle discrepancy, 0.001 s step | 3.0e-5 rad | Smaller than nominal-step error |
+| Exact zero input at zero state | Both rotor commands exactly zero | No NaN or division by zero |
+| Initially out-of-envelope request | Rejected with pitch-envelope diagnostic | Required |
+| Simulation crossing the envelope | Stopped with pitch-envelope diagnostic | Required |
+
+The residuals are floating-point roundoff, not evidence of physical measurement noise. The angle discrepancy is integration error: forward Euler approximates the integral chain, and halving its step halves that error. The nonzero initial rates explain why yaw initially decreases even though the later yaw acceleration pulse is positive. After the pulse, yaw continues at its remaining velocity; feedback linearization alone does not regulate angle.
+
+Question 3 passes its algebraic and ideal-speed simulation checks. The next step is to choose the virtual acceleration from yaw/pitch position errors and rates in Question 4, targeting the guide's approximately 3 s settling time. Finite-bandwidth motor-loop effects are assessed when building the complete cascade, rather than being folded into the perfect-tracking assumption here.
+
+MATLAB R2024b Code Analyzer reports no issues in the six new functions. Both the native model and R2021a export run in R2024b after clearing the workspace and restoring the default MATLAB path, confirming that their embedded equations do not require external helper files at simulation time. Actual execution in R2021a and hardware testing remain unverified. The five original course files are byte-identical to `course-baseline`.
