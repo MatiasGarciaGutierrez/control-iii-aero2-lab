@@ -1,6 +1,6 @@
 # AERO 2 laboratory development report
 
-This report grows with each feature PR. It records the reasoning, the implemented configuration, and the validation evidence. The work begins with simulator setup; motor PI control is a later feature.
+This report grows with each feature PR. It records the reasoning, the implemented configuration, and the validation evidence. The work begins with simulator setup, followed by Question 1 motor PI control.
 
 ## Simulator setup
 
@@ -124,3 +124,131 @@ The R2024b simulator checks pass. The dynamics script, selected amplifier/sensor
 | Noise-enabled smoke test | 501 finite recorded samples with sensor effects | Sensor switch works |
 
 This establishes a usable baseline for the next feature, the motor PI controller. It does not test a controller settling-time target, physical hardware, or execution in actual MATLAB R2021a.
+
+## Question 1 — Motor-speed PI control
+
+### Physical meaning and objective
+
+![Main rotor, tail rotor, pitch joint and yaw column](figures/aero2_rotors.png)
+
+The annotated photograph comes from Part II, page 4 of the supplied guide. In this helicopter configuration, the main rotor has a horizontal propeller plane and primarily produces pitch motion; the tail rotor has a vertical propeller plane and primarily produces yaw motion. Both motors also contribute coupling torques. Motor spin speeds `w_main` and `w_tail` are distinct from the body's yaw and pitch angles. The course plant inputs `V1` and `V2` are main and tail motor voltages, respectively.
+
+Question 1 asks for PI control of the blade speed with approximately 0.3 s settling time, verified in the supplied simulation. Our desired inputs are now **speeds**, not voltages. The two PI controllers compute the voltages needed to make measured speeds follow those references. The mechanical body remains free to move; position regulation belongs to later questions.
+
+### Derivation and gain selection
+
+Each motor obeys the identical supplied equation
+
+$$\dot\omega=-5.78\omega+96.532v.$$
+
+For zero initial conditions, its voltage-to-speed transfer function is
+
+$$P(s)=\frac{\Omega(s)}{V(s)}=\frac{96.532}{s+5.78}.$$
+
+With error $e=\omega_d-\omega$, choose
+
+$$v_{\mathrm{raw}}=K_pe+I,\qquad\dot I=K_ie.$$
+
+Thus $C(s)=K_p+K_i/s$, and the unsaturated closed-loop transfer function is
+
+$$\frac{\Omega(s)}{\Omega_d(s)}=
+\frac{96.532K_ps+96.532K_i}
+{s^2+(5.78+96.532K_p)s+96.532K_i}.$$
+
+Match its denominator to critically damped poles $(s+\lambda)^2$. Using the familiar initial 2% estimate $T_s\approx4/\lambda$, set $\lambda=4/0.3=13.3333\ \mathrm{s^{-1}}$. Matching coefficients gives
+
+$$K_p=\frac{2\lambda-5.78}{96.532}=0.2163703919,$$
+
+$$K_i=\frac{\lambda^2}{96.532}=1.8416460633.$$
+
+The authoritative gains are calculated from these equations in `matlab/parameters/motor_pi_parameters.m`; rounded values here are for reading. Both motors use the same gains because their supplied motor dynamics are identical. The units of $K_p$ and $K_i$ are V/(rad/s) and V/rad, respectively.
+
+Critical damping describes the poles. The PI numerator has a zero, so the reference response can still overshoot and its exact settling time differs from $4/\lambda$. For a step of amplitude $A$ at time zero, the independent continuous-time solution is
+
+$$\omega(t)=A\left[1-e^{-\lambda t}\left(1+(5.78-\lambda)t\right)\right].$$
+
+This expression is used as a check against the simulation, rather than asserting that critically damped poles guarantee zero overshoot. With integral action, constant reachable references have zero steady-state error in this ideal motor model.
+
+### Implemented Simulink solution
+
+`matlab/build_motor_pi.m` generates `simulink/aero2_motor_pi.slx` and an R2021a export. The separate open-loop baseline remains available. The new model copies the original course nonlinear plant, internal amplifier, sensor model and zero initial state. Ideal measurements are selected with `meas_on=0` in the model workspace. Gains `Kp` and `Ki` are also stored there, so the saved model runs independently of base-workspace variables.
+
+Each motor loop is assembled from visible Sum, Gain, Integrator and Saturation blocks:
+
+```text
+Desired speed → error → [Kp in parallel with Ki/s] → raw voltage
+                  ↑                                  ↓
+             measured speed ← course plant ← ±24 V limit
+```
+
+The proportional path acts on error. This is PI control; the IP rearrangement and anti-windup are Question 2 and have not been introduced here. The integral state is initialized to zero and logged in volts because it is the integral contribution to the controller output.
+
+| Configuration | Value |
+|---|---|
+| Main speed Step block | 0 → +100 rad/s at 0.1 s |
+| Tail speed Step block | 0 → -100 rad/s at 0.1 s |
+| Step sample time | 0, continuous |
+| Controller | Continuous PI integrated by the Simulink solver |
+| Voltage limits | -24 to +24 V, outside and inside the copied plant |
+| Solver | Fixed-step forward Euler, 0.002 s |
+| Stop time | 1 s |
+| Initial motor speeds and integral contributions | Zero |
+
+The voltage is now the **controller output**, rather than a configured voltage pulse. To edit the default experiment, double-click `Main speed reference` or `Tail speed reference` and change the Step block's final speed. To inspect gains, open the model workspace or the parameter function and rebuild. There is no angle command at this stage.
+
+| Scope | Signals |
+|---|---|
+| Speed scope | Main desired/measured speed, then tail desired/measured speed; four traces in rad/s |
+| Error scope | Main and tail speed errors in rad/s |
+| Voltage scope | Main and tail applied voltages after the visible limits, in V |
+
+`out.motor_data` logs 14 columns: main/tail references (1–2), measured speeds (3–4), errors (5–6), raw voltages (7–8), applied voltages (9–10), integral contributions (11–12), then yaw/pitch angles (13–14). Logging uses the solver rate, so the refinement experiment also records its smaller step. All logged signals must remain finite.
+
+![Actual Simulink motor PI diagram export](figures/motor_pi_diagram.png)
+
+### Validation and reproduction
+
+From the repository Current Folder:
+
+```matlab
+project = setup_project;
+model = build_motor_pi;
+metrics = validate_motor_pi;
+export_motor_pi_figures;
+open_system(model);
+open_system([model '/Speed scope']);
+open_system([model '/Error scope']);
+open_system([model '/Voltage scope']);
+out = sim(model);
+```
+
+For a saved model, rebuilding is optional: `open_system(fullfile(project.simulink,'aero2_motor_pi.slx'))`, open the scopes and press Run. Builders overwrite their generated models; implement lasting diagram changes in the builder.
+
+`validation/validate_motor_pi.m` tests +100 and -100 rad/s on each motor independently, simultaneous opposite-sign steps, and a zero-reference equilibrium. Independent-channel tests detect swapped feedback or accidental coupling of speed commands. Signed tests detect incorrect feedback signs. Every commanded channel is compared with the analytical solution above, which detects an incorrect motor model or controller realization.
+
+Settling time is measured **relative to the 0.1 s step**, at the first recorded sample after the last departure from a ±2 rad/s band, remaining inside until the 1 s simulation end. Acceptance is 0.24–0.36 s under our agreed ±20% interpretation of approximately 0.3 s. Final error must be below 1 rad/s. Nominal tests must have no saturation; raw and applied voltages are compared sample by sample. A half-step run at 0.001 s must preserve the timing result within 0.01 s. Raw runs, integral states, the refinement run and the metrics CSV are saved under ignored `results/`.
+
+![Positive and negative speed steps for each motor, with errors and voltages](figures/motor_pi_steps.png)
+
+These are plots of the signals connected to the Scope blocks and an actual model diagram export, rather than native Scope-window screenshots. The positive and negative single-motor tests are overlaid; the simultaneous test is checked numerically and retained in the raw data.
+
+### Measured results and conclusion
+
+The ±100 rad/s single-axis tests and both simultaneous opposite-sign tests give the same motor metrics because the supplied motor equations are identical and independent of the mechanical body motion.
+
+| Metric | Main motor, either sign | Tail motor, either sign |
+|---|---:|---:|
+| 2% settling time, measured from step | 0.318 s | 0.318 s |
+| Overshoot | 3.7021% | 3.7021% |
+| Absolute final error at 1 s | 0.003124 rad/s | 0.003124 rad/s |
+| Peak absolute applied voltage | 21.6370 V | 21.6370 V |
+| Time in voltage saturation | 0 s | 0 s |
+| Maximum discrepancy from continuous analytical solution | 0.81949 rad/s | 0.81949 rad/s |
+
+The discrepancy from the continuous formula includes the supplied Euler discretization; the independent solution has no numerical integration error. The 0.318 s result is 6% longer than the nominal 0.3 s target and lies inside our agreed 0.24–0.36 s acceptance band. The small overshoot is consistent with the PI zero despite repeated real poles. The initial proportional action demands about 21.64 V for a 100 rad/s error; the final holding voltage is about 5.99 V, matching $5.78(100)/96.532$.
+
+Question 1 passes the stated simulation criteria. These gains have only been assessed for these reachable nominal speed commands with ideal measurements. Larger commands may saturate and wind up the integral term; Question 2 introduces IP control and anti-windup. Body-angle regulation, sensor-noise performance and physical experiments remain later stages.
+
+With the integration step reduced to 0.001 s, both motors settle in **0.319 s**, a 0.001 s change from the nominal simulation. The exact continuous-time expression predicts approximately 0.31924 s. This supports the timing conclusion and explains the small numerical difference. All original open-loop simulator checks also pass, the copied PI-model dynamics and sensor settings match the course plant, and the five course files remain byte-identical to `course-baseline`.
+
+MATLAB R2024b Code Analyzer reports no issues in the four new MATLAB functions. The R2021a-exported model was loaded and simulated in R2024b after clearing the workspace; its logged signals are finite. Actual R2021a execution and hardware validation have not been performed.

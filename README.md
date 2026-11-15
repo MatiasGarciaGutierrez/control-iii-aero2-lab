@@ -11,9 +11,9 @@ Part II of the Automatic Control III computer-room laboratory. We develop and va
 ├── .gitignore
 ├── setup_project.m
 ├── course/                 Original course documents, script and model
-├── matlab/                 Reproducible working-model builder
-├── simulink/               Open-loop working model and R2021a export
-├── validation/             Simulator checks and figure export
+├── matlab/                 Model builders and motor PI parameters
+├── simulink/               Open-loop and motor PI models; R2021a exports
+├── validation/             Simulator and motor PI checks; figure exports
 ├── docs/                   Growing report and selected figures
 └── .github/
     └── pull_request_template.md
@@ -62,6 +62,24 @@ export_simulator_figures;
 ```
 
 `build_simulator` recreates the working model, so update the builder before rebuilding if you want to retain manual diagram edits. Raw validation data is generated in ignored `results/`; selected figures are exported to `docs/figures/`.
+
+## Question 1: motor-speed PI control
+
+The closed-loop model `simulink/aero2_motor_pi.slx` controls both motor speeds with identical PI loops. Run:
+
+```matlab
+project = setup_project;
+model = build_motor_pi;
+metrics = validate_motor_pi;
+export_motor_pi_figures;
+open_system(model);
+open_system([model '/Speed scope']);
+open_system([model '/Error scope']);
+open_system([model '/Voltage scope']);
+out = sim(model);
+```
+
+The default references are +100 rad/s for the main motor and -100 rad/s for the tail motor, applied at 0.1 s. Change the Step blocks to select another speed. Gains are derived in `matlab/parameters/motor_pi_parameters.m`; the model stores them in its own workspace. For an existing saved model, rebuilding is optional. The [report](docs/report.md#question-1--motor-speed-pi-control) includes the hardware diagram, derivation, exact block settings and measured results. This stage regulates rotor speeds; body-angle control comes later.
 
 The laboratory uses MATLAB R2021a. The working model includes an R2021a export, but actual R2021a execution remains unverified. Validation is performed in the available R2024b installation.
 
