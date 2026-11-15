@@ -1,6 +1,44 @@
 # AERO 2 laboratory development report
 
-This report grows with each feature PR. It records the reasoning, the implemented configuration, and the validation evidence. The work begins with simulator setup, followed by Question 1 motor PI control and Question 2 IP control with anti-windup.
+This report grows with each feature PR. It records the reasoning, the implemented configuration, and the validation evidence. The work begins with simulator setup, followed by Questions 1–3: PI, IP with anti-windup, and mechanical feedback linearization.
+
+## Simple question models and separate experiments
+
+The exercise answers are the three models directly under `simulink/`. Open these first when studying the control laws. Experiment generators, PI/IP comparison switches, recovery steps and diagnostic logging are kept in separate copies under `simulink/experiments/`.
+
+| Question | Simple answer | Experiment copy |
+|---|---|---|
+| 1 — PI | `simulink/aero2_motor_pi.slx` | `simulink/experiments/aero2_motor_pi_experiment.slx` |
+| 2 — IP + anti-windup | `simulink/aero2_motor_ip.slx` | `simulink/experiments/aero2_motor_ip_experiment.slx` |
+| 3 — Feedback linearization | `simulink/aero2_mechanical_linearization.slx` | `simulink/experiments/aero2_mechanical_linearization_experiment.slx` |
+
+Each model has a corresponding `_R2021a.slx` export. The original models in `course/` are unchanged. The existing open-loop setup model remains available as preparation material.
+
+The simple motor models have one speed-reference Step block per motor, the controller, voltage limits, the supplied plant, and speed/voltage scopes. Question 2 explicitly implements `v_raw = I - Kp*omega`: there is no reference-weight selector or recovery-command sum. Its anti-windup path remains visible because it is part of the answer. Neither model contains the diagnostic logging mux or To Workspace block.
+
+![Simple Question 1: PI motor controller](figures/question_1_diagram.png)
+
+![Simple Question 2: IP motor controller with anti-windup](figures/question_2_diagram.png)
+
+The simple Question 3 model contains one vector acceleration Step, the inverse, ideal-speed mechanics, a state integrator, angle/rate feedback and an angle scope. It starts from zero state, and the input changes from `[0;0]` to `[0.15;-0.1]` rad/s² at 0.2 s. This makes the ideal double-integrator response easy to inspect. The inverse retains its pitch-envelope assertion. Residual calculations, diagnostic outputs and logging are confined to the experiment copy.
+
+![Simple Question 3: mechanical feedback linearization](figures/question_3_diagram.png)
+
+To rebuild the simple answers and their experiment copies:
+
+```matlab
+project = setup_project;
+build_motor_pi;
+build_motor_ip;
+build_feedback_linearization;
+open_system(fullfile(project.simulink,'aero2_motor_ip.slx'));
+open_system('aero2_motor_ip/Speed scope');
+open_system('aero2_motor_ip/Voltage scope');
+```
+
+The builders recreate the experiment copy first, then produce the simple answer with the same equations and essential connections. `matlab/create_question_model.m` performs that reduction. The Question 1–3 `validate_*` scripts and trace exporters now use the experiment copies. Their measured results and the detailed diagnostic settings below describe those experiment copies. The diagrams labeled “Simple Question” above show the answer models; detailed diagrams later in the report show the experiment setup.
+
+`validate_question_models` separately checks that the simple answers reproduce the experiment dynamics under matching inputs and initial conditions. It temporarily adds logging only to the loaded model, compares references, states and controller signals, then discards that instrumentation without saving it. For Question 3 the comparison temporarily configures the experiment's pulse to remain active through the run and sets its initial state to zero, matching the simple Step demonstration. Thus differences in demonstration inputs are not mistaken for controller differences.
 
 ## Simulator setup
 
@@ -171,7 +209,7 @@ This expression is used as a check against the simulation, rather than asserting
 
 ### Implemented Simulink solution
 
-`matlab/build_motor_pi.m` generates `simulink/aero2_motor_pi.slx` and an R2021a export. The separate open-loop baseline remains available. The new model copies the original course nonlinear plant, internal amplifier, sensor model and zero initial state. Ideal measurements are selected with `meas_on=0` in the model workspace. Gains `Kp` and `Ki` are also stored there, so the saved model runs independently of base-workspace variables.
+`matlab/build_motor_pi_experiment.m` generates `simulink/experiments/aero2_motor_pi_experiment.slx` and an R2021a export. The separate open-loop baseline remains available. The new model copies the original course nonlinear plant, internal amplifier, sensor model and zero initial state. Ideal measurements are selected with `meas_on=0` in the model workspace. Gains `Kp` and `Ki` are also stored there, so the saved model runs independently of base-workspace variables.
 
 Each motor loop is assembled from visible Sum, Gain, Integrator and Saturation blocks:
 
@@ -212,7 +250,7 @@ From the repository Current Folder:
 
 ```matlab
 project = setup_project;
-model = build_motor_pi;
+model = build_motor_pi_experiment;
 metrics = validate_motor_pi;
 export_motor_pi_figures;
 open_system(model);
@@ -222,7 +260,7 @@ open_system([model '/Voltage scope']);
 out = sim(model);
 ```
 
-For a saved model, rebuilding is optional: `open_system(fullfile(project.simulink,'aero2_motor_pi.slx'))`, open the scopes and press Run. Builders overwrite their generated models; implement lasting diagram changes in the builder.
+For a saved model, rebuilding is optional: `open_system(fullfile(project.experiments, 'aero2_motor_pi_experiment.slx'))`, open the scopes and press Run. Builders overwrite their generated models; implement lasting diagram changes in the builder.
 
 `validation/validate_motor_pi.m` tests +100 and -100 rad/s on each motor independently, simultaneous opposite-sign steps, and a zero-reference equilibrium. Independent-channel tests detect swapped feedback or accidental coupling of speed commands. Signed tests detect incorrect feedback signs. Every commanded channel is compared with the analytical solution above, which detects an incorrect motor model or controller realization.
 
@@ -296,7 +334,7 @@ During positive saturation the correction is negative, opposing integral buildup
 
 ### Implemented files, blocks and selection
 
-`matlab/parameters/motor_ip_parameters.m` imports the original PI parameters and adds the reference weight, tracking time and recovery-step time. `matlab/build_motor_ip.m` extends the saved PI model into a separate `simulink/aero2_motor_ip.slx`, retaining Question 1 as a comparison baseline. It also exports an R2021a version. The original course files are unchanged.
+`matlab/parameters/motor_ip_parameters.m` imports the original PI parameters and adds the reference weight, tracking time and recovery-step time. `matlab/build_motor_ip_experiment.m` extends the saved PI model into a separate `simulink/experiments/aero2_motor_ip_experiment.slx`, retaining Question 1 as a comparison baseline. It also exports an R2021a version. The original course files are unchanged.
 
 For each motor, inspect these additions:
 
@@ -311,7 +349,7 @@ For each motor, inspect these additions:
 The model workspace stores `Beta=0` and `Kaw=20` by default: IP with anti-windup. `Beta=1` selects PI; `Kaw=0` disables anti-windup. These selections are independent, permitting controlled comparisons. For example, after opening the model:
 
 ```matlab
-ws = get_param('aero2_motor_ip','ModelWorkspace');
+ws = get_param('aero2_motor_ip_experiment','ModelWorkspace');
 assignin(ws,'Beta',0);   % IP; use 1 for PI
 assignin(ws,'Kaw',20);   % Anti-windup; use 0 to disable
 ```
@@ -330,7 +368,7 @@ The existing Speed, Error and Voltage scopes retain their Question 1 channel ord
 
 ```matlab
 project = setup_project;
-model = build_motor_ip;
+model = build_motor_ip_experiment;
 [nominal, recovery] = validate_motor_ip;
 export_motor_ip_figures;
 open_system(model);
@@ -480,11 +518,11 @@ The chosen envelope avoids the pitch singularity; it does not guarantee actuator
 | `matlab/parameters/aero2_mechanical_parameters.m` | Supplied mechanical constants, simulation envelope, initial state and pulse amplitudes |
 | `matlab/mechanics/aero2_mechanical_terms.m` | Computes the inertia, velocity terms, gravity and rotor torque map |
 | `matlab/mechanics/aero2_feedback_linearization.m` | Matrix solve, signed square root and pitch-envelope assertion |
-| `matlab/build_feedback_linearization.m` | Builds the ideal-speed mechanical Simulink test bench and R2021a export |
+| `matlab/build_feedback_linearization_experiment.m` | Builds the ideal-speed mechanical Simulink test bench and R2021a export |
 | `validation/validate_feedback_linearization.m` | Independent course-equation substitution, time simulation and envelope-stop tests |
 | `validation/export_feedback_linearization_figures.m` | Exports the actual diagram and plots of logged Scope signals |
 
-`simulink/aero2_mechanical_linearization.slx` contains a dedicated **Mechanical inverse** MATLAB Function block and **Ideal-speed course mechanics** block. The inverse embeds the three pure MATLAB functions so that the saved model does not depend on their external path. The plant block embeds the original course dynamics code unchanged except for a renamed local entry point. It supplies the computed rotor speeds algebraically, then retains only the four mechanical derivatives; it neither integrates the discarded motor derivatives nor simulates motor voltages. The new working model uses ideal state measurements, rather than the original sensor blocks, consistently with the derivation.
+`simulink/experiments/aero2_mechanical_linearization_experiment.slx` contains a dedicated **Mechanical inverse** MATLAB Function block and **Ideal-speed course mechanics** block. The inverse embeds the three pure MATLAB functions so that the saved model does not depend on their external path. The plant block embeds the original course dynamics code unchanged except for a renamed local entry point. It supplies the computed rotor speeds algebraically, then retains only the four mechanical derivatives; it neither integrates the discarded motor derivatives nor simulates motor voltages. The new working model uses ideal state measurements, rather than the original sensor blocks, consistently with the derivation.
 
 The Integrator block stores the four-state mechanical vector; a Demux separates angles and rates for feedback. The experiment commands **accelerations**, not desired positions or motor voltages:
 
@@ -517,7 +555,7 @@ The nonzero initial pitch and rates exercise compensation beyond the rest config
 
 ```matlab
 project = setup_project;
-model = build_feedback_linearization;
+model = build_feedback_linearization_experiment;
 checks = validate_feedback_linearization;
 export_feedback_linearization_figures;
 open_system(model);
@@ -559,3 +597,9 @@ The residuals are floating-point roundoff, not evidence of physical measurement 
 Question 3 passes its algebraic and ideal-speed simulation checks. The next step is to choose the virtual acceleration from yaw/pitch position errors and rates in Question 4, targeting the guide's approximately 3 s settling time. Finite-bandwidth motor-loop effects are assessed when building the complete cascade, rather than being folded into the perfect-tracking assumption here.
 
 MATLAB R2024b Code Analyzer reports no issues in the six new functions. Both the native model and R2021a export run in R2024b after clearing the workspace and restoring the default MATLAB path, confirming that their embedded equations do not require external helper files at simulation time. Actual execution in R2021a and hardware testing remain unverified. The five original course files are byte-identical to `course-baseline`.
+
+## Validation of the simple/experiment separation
+
+All three simple models reproduce their experiment copy's recorded dynamics exactly under matched inputs and initial states: the maximum difference is **0** for each question. For Questions 1–2 the comparison covers references, speeds, errors, raw/applied voltages, integral contributions and body angles. For Question 3 it covers virtual acceleration, mechanical angles/rates and rotor commands. Temporary comparison logging is discarded without saving it to the simple models.
+
+The existing PI, IP/anti-windup and feedback-linearization acceptance suites pass against the separately named experiment copies, preserving the previously reported numerical results. MATLAB Code Analyzer passes the eight new/refactored builder and equivalence-check functions. The simple R2021a exports run in R2024b with the default MATLAB path; actual R2021a execution remains unverified. Course source files are unchanged.

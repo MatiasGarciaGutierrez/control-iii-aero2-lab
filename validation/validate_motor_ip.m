@@ -1,7 +1,7 @@
 function [nominal, recovery] = validate_motor_ip
 %VALIDATE_MOTOR_IP Compare shared-gain PI/IP and signed windup recovery.
 project=setup_project; p=motor_ip_parameters;
-model='aero2_motor_ip'; load_system(fullfile(project.simulink,[model '.slx']));
+model='aero2_motor_ip_experiment'; load_system(fullfile(project.experiments,[model '.slx']));
 if ~isfolder(project.results), mkdir(project.results); end
 nominal=table; runs=cell(3,2);
 % Compare PI, IP without AW, IP with AW under the same signed commands.

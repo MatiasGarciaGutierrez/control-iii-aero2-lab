@@ -1,8 +1,8 @@
 function metrics = validate_motor_pi
 %VALIDATE_MOTOR_PI Check each motor and both step signs with the course plant.
 project = setup_project; p = motor_pi_parameters;
-model = 'aero2_motor_pi';
-load_system(fullfile(project.simulink, [model '.slx']));
+model = 'aero2_motor_pi_experiment';
+load_system(fullfile(project.experiments, [model '.slx']));
 % Verify the working copy retains the supplied dynamics and sensor settings.
 load_system(fullfile(project.course, 'model_AERO2_simul_R2021a.slx'));
 source = 'model_AERO2_simul_R2021a/Twin rotor (simplified model)';

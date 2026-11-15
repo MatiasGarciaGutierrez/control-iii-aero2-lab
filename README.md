@@ -1,133 +1,98 @@
 # Control III AERO 2 laboratory
 
-Part II of the Automatic Control III computer-room laboratory. We develop and validate the AERO 2 motor and position controllers one step at a time, starting with the original course files.
+Part II of the Automatic Control III laboratory. Develop and validate the controller one question at a time, preserving the supplied course files.
+
+## Start with the simple question models
+
+| Question | Model to study | Basic scopes |
+|---|---|---|
+| 1 — PI motor-speed control | `simulink/aero2_motor_pi.slx` | Speed, voltage |
+| 2 — IP with anti-windup | `simulink/aero2_motor_ip.slx` | Speed, voltage |
+| 3 — Mechanical feedback linearization | `simulink/aero2_mechanical_linearization.slx` | Yaw/pitch angles |
+
+The question models contain essential control/plant connections, a basic reference and basic scopes. The IP answer shows `v_raw = I - Kp*omega` and its anti-windup feedback directly. It has no recovery-step generator, PI/IP selector or diagnostic logging bundle.
+
+From the repository as MATLAB's Current Folder:
+
+```matlab
+project = setup_project;
+open_system(fullfile(project.simulink,'aero2_motor_ip.slx'));
+open_system('aero2_motor_ip/Speed scope');
+open_system('aero2_motor_ip/Voltage scope');
+```
+
+Press Run. The motor examples command main +100 and tail -100 rad/s at 0.1 s. Question 3 starts at zero state and applies a vector acceleration Step `[0.15;-0.1]` rad/s² at 0.2 s, assuming ideal rotor-speed tracking. It does not yet regulate position; the 3 s position controller is Question 4.
+
+The [report](docs/report.md) shows the simple diagrams first, then derives each controller and explains the separate experiment settings and results.
+
+## Separate experiment copies
+
+The diagnostic models are under `simulink/experiments/` and have unique `_experiment` names:
+
+- `aero2_motor_pi_experiment.slx`: signed motor tests and detailed logging.
+- `aero2_motor_ip_experiment.slx`: PI/IP selection, optional recovery steps, raw/applied voltage and integral-state diagnostics.
+- `aero2_mechanical_linearization_experiment.slx`: acceleration pulses, nonzero initial state, analytical comparison and residual diagnostics.
+
+Open them by full path; `setup_project` returns `project.experiments` without adding that directory to the MATLAB path. For example:
+
+```matlab
+open_system(fullfile(project.experiments,'aero2_motor_ip_experiment.slx'));
+```
+
+The existing validation commands target these experiment copies:
+
+```matlab
+validate_motor_pi;
+validate_motor_ip;
+validate_feedback_linearization;
+validate_question_models;    % Check simple/experiment equivalence; export simple diagrams
+export_motor_pi_figures;
+export_motor_ip_figures;
+export_feedback_linearization_figures;
+```
+
+Generated raw recordings and numerical tables go under ignored `results/`. Selected evidence is committed under `docs/figures/`. The simple models have no To Workspace logging blocks; the equivalence check temporarily instruments them in memory and discards those changes.
+
+## Rebuild models
+
+```matlab
+project = setup_project;
+build_motor_pi;
+build_motor_ip;
+build_feedback_linearization;
+```
+
+Each command recreates its experiment copy and then the simple question answer. The separate `build_*_experiment` functions can rebuild only the diagnostic model. Lasting diagram edits belong in the builders, because rebuilding overwrites generated models.
+
+`simulink/aero2_simulator.slx` remains the open-loop preparation model. Use `build_simulator`, `validate_simulator` and `export_simulator_figures` for that baseline.
+
+All working models have R2021a exports. Validation uses the available MATLAB R2024b installation; running an exported model in R2024b is distinct from actual execution in R2021a. Physical testing requires professor approval and the actual device interface and limits.
 
 ## Folder layout
 
 ```text
-.
-├── README.md
-├── AGENTS.md
-├── .gitignore
-├── setup_project.m
-├── course/                 Original course documents, script and model
-├── matlab/                 Model builders, parameters and mechanical inverse
-├── simulink/               Open-loop and motor PI models; R2021a exports
-├── validation/             Simulator and motor PI checks; figure exports
-├── docs/                   Growing report and selected figures
-└── .github/
-    └── pull_request_template.md
+course/                  Original supplied PDFs, initialization script and model
+matlab/                  Model builders
+matlab/parameters/       Course constants and controller gains
+matlab/mechanics/        Mechanical equations and nonlinear inverse
+simulink/                Simple question answers and open-loop preparation
+simulink/experiments/    Separate diagnostic models
+validation/              Repeatable experiments and acceptance checks
+docs/                    Growing report and selected figures
+results/                 Generated data and metrics, ignored by Git
 ```
 
-Implementation is organized as follows; new directories are added when their first feature needs them:
+`setup_project.m` returns absolute paths and adds only explicit implementation directories. It does not initialize models, change folder or run experiments. Course originals and experiment models are intentionally excluded from the MATLAB path.
 
-| Directory | Purpose |
-|---|---|
-| `matlab/parameters/` | Model parameters and controller gain calculations |
-| `matlab/controllers/` | Motor and position control laws |
-| `matlab/mechanics/` | Mechanical equations and feedback linearization |
-| `simulink/` | Our working models, distinct from the course original |
-| `validation/` | Repeatable experiments, plots and measured acceptance checks |
-| `docs/` | The developing report and explanations |
-| `docs/figures/` | Selected figures committed as evidence |
-| `results/` | Generated raw data, plots and exports, excluded from Git |
-
-Do not copy the entire project into separate folders for each question. Feature branches and pull requests record its development.
-
-## Original course files
-
-`course/` contains the assignment, linearization theory, model documentation, initialization script and original Simulink model. Their contents are preserved byte for byte. The original root commit is tagged `course-baseline`; this layout change only relocates those five files.
-
-The supplied model is an unfinished starting point. Its initialization callback refers to the absent `nlc_setup` script and its controller wiring is incomplete. Our separate open-loop model copies its plant unchanged, provides voltage pulses, scopes and logging, and stores the sensor default in its own model workspace. The original course model remains unchanged.
-
-## MATLAB setup
-
-Select the repository as MATLAB's Current Folder and run:
-
-```matlab
-project = setup_project;
-open_system(fullfile(project.simulink, 'aero2_simulator.slx'))
-```
-
-`setup_project` returns absolute project directory paths and adds only existing implementation directories to MATLAB's path. It can be called again after new directories are added. It does not change the Current Folder, initialize the course model, create output directories, or run a simulation. The course originals are intentionally not added to the MATLAB path; open them using their full paths.
-
-The default experiment applies +1 V to the main motor and -1 V to the tail motor from 0.1 to 0.3 s, then observes the response until 1 s. Double-click the three Scope blocks, then press Run to view voltages, rotor speeds, and yaw/pitch. Read the [development report](docs/report.md) for input settings, signal meanings and recorded evidence. This model has no controller yet.
-
-To rebuild and validate it:
-
-```matlab
-model = build_simulator;
-checks = validate_simulator;
-export_simulator_figures;
-```
-
-`build_simulator` recreates the working model, so update the builder before rebuilding if you want to retain manual diagram edits. Raw validation data is generated in ignored `results/`; selected figures are exported to `docs/figures/`.
-
-## Question 1: motor-speed PI control
-
-The closed-loop model `simulink/aero2_motor_pi.slx` controls both motor speeds with identical PI loops. Run:
-
-```matlab
-project = setup_project;
-model = build_motor_pi;
-metrics = validate_motor_pi;
-export_motor_pi_figures;
-open_system(model);
-open_system([model '/Speed scope']);
-open_system([model '/Error scope']);
-open_system([model '/Voltage scope']);
-out = sim(model);
-```
-
-The default references are +100 rad/s for the main motor and -100 rad/s for the tail motor, applied at 0.1 s. Change the Step blocks to select another speed. Gains are derived in `matlab/parameters/motor_pi_parameters.m`; the model stores them in its own workspace. For an existing saved model, rebuilding is optional. The [report](docs/report.md#question-1--motor-speed-pi-control) includes the hardware diagram, derivation, exact block settings and measured results. This stage regulates rotor speeds; body-angle control comes later.
-
-## Question 2: IP control and anti-windup
-
-```matlab
-project = setup_project;
-model = build_motor_ip;
-[nominal, recovery] = validate_motor_ip;
-export_motor_ip_figures;
-open_system(model);
-open_system([model '/Speed scope']);
-open_system([model '/Raw voltage scope']);
-open_system([model '/Voltage scope']);
-open_system([model '/Integrator scope']);
-out = sim(model);
-```
-
-The saved model defaults to IP with anti-windup. It retains the Question 1 gains and adds a 0.05 s tracking time. In its model workspace, `Beta=0` selects IP (`1` selects PI), and `Kaw=20` enables anti-windup (`0` disables it). Validation compares identical nominal steps, then an unreachable ±800 rad/s request followed by a return to ±100 rad/s. The [Question 2 report](docs/report.md#question-2--ip-control-with-anti-windup) explains the slower IP response, back-calculation blocks, reference settings and recovery evidence.
-
-## Question 3: mechanical feedback linearization
-
-```matlab
-project = setup_project;
-model = build_feedback_linearization;
-checks = validate_feedback_linearization;
-export_feedback_linearization_figures;
-open_system(model);
-open_system([model '/Acceleration scope']);
-open_system([model '/Angle scope']);
-open_system([model '/Rotor command scope']);
-out = sim(model);
-```
-
-`simulink/aero2_mechanical_linearization.slx` assumes perfect motor-speed tracking. Its inverse maps virtual yaw/pitch acceleration to desired main/tail rotor speeds, yielding two double integrators in the ideal course model. The test applies acceleration pulses; it does not command angle setpoints. A ±60° pitch simulation envelope is enforced with an assertion. The [Question 3 report](docs/report.md#question-3--mechanical-feedback-linearization) derives the inverse and linearized states, explains the singularities and actuator limitations, and records independent substitution/simulation checks. The 3 s position controller is Question 4 and is not included here.
-
-The laboratory uses MATLAB R2021a. The working model includes an R2021a export, but actual R2021a execution remains unverified. Validation is performed in the available R2024b installation.
+The five files under `course/` remain byte-identical to the `course-baseline` tag. The supplied unfinished model remains unchanged, including its original callback; working models are separate. Course-provided material retains its original ownership; this repository assigns no new license to it.
 
 ## Solo development workflow
 
-`master` is the only long-lived branch and is the default branch. This personal project has no staging environment or `dev` branch.
+`master` is the only long-lived branch; there is no staging or `dev` branch.
 
-1. Fetch the latest `origin/master` and create a focused `feature/`, `fix/` or `refactor/` branch. Use hyphens in branch names.
-2. Implement one agreed step, explain the reasoning, and run the relevant validation.
-3. Open a GitHub PR targeting `master`. Assign it to `MatiasGarciaGutierrez`; as a solo project, an independent reviewer is optional.
-4. Inspect the diff and evidence before merging. Opening a PR does not authorize merging it.
-5. Squash-merge an accepted PR and delete its short-lived branch. Preserve `master`.
+1. Branch from the latest `origin/master` with a focused `feature/`, `fix/` or `refactor/` name.
+2. Implement one agreed step, document its reasoning and validate it.
+3. Open a GitHub PR targeting `master`, assigned to `MatiasGarciaGutierrez`. Independent review is optional for this solo project.
+4. Merge only when requested, using squash, then remove the source branch.
 
-Before opening a PR, fetch the latest target and confirm it is an ancestor of the feature branch. Rebase only the short-lived branch if necessary; use `--force-with-lease` when publishing a rebase. Never rebase or force-push `master`.
-
-GitHub reports that server-side branch protections are not enforced for this private repository under the current plan. A local pre-push hook in the current checkout blocks direct pushes and deletions of `master`; hooks are not copied by cloning, so this is not repository-wide enforcement. Follow the PR workflow on every checkout.
-
-Course-provided material retains its original ownership. No new license is assigned to it by this repository.
+Fetch and recheck target freshness before opening or merging a PR. Rebase only short-lived branches when needed and publish rebases with `--force-with-lease`. Never rebase or force-push `master`. The current private GitHub plan does not enforce server-side branch protection; the existing local pre-push hook is checkout-specific and is not copied by cloning.

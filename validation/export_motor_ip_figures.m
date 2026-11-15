@@ -1,7 +1,7 @@
 function export_motor_ip_figures
 %EXPORT_MOTOR_IP_FIGURES Plot recorded comparisons and export actual diagrams.
-project=setup_project; model='aero2_motor_ip';
-load_system(fullfile(project.simulink,[model '.slx']));
+project=setup_project; model='aero2_motor_ip_experiment';
+load_system(fullfile(project.experiments,[model '.slx']));
 s=load(fullfile(project.results,'motor_ip_validation.mat'));
 folder=fullfile(project.docs,'figures');
 print(['-s' model],'-dpng','-r140',fullfile(folder,'motor_ip_diagram.png'));
