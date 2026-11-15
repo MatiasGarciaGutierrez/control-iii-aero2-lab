@@ -5,6 +5,7 @@ project.root = fileparts(mfilename('fullpath'));
 project.course = fullfile(project.root, 'course');
 project.matlab = fullfile(project.root, 'matlab');
 project.simulink = fullfile(project.root, 'simulink');
+project.experiments = fullfile(project.simulink, 'experiments');
 project.validation = fullfile(project.root, 'validation');
 project.docs = fullfile(project.root, 'docs');
 project.results = fullfile(project.root, 'results');

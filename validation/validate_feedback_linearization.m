@@ -1,8 +1,8 @@
 function checks = validate_feedback_linearization
 %VALIDATE_FEEDBACK_LINEARIZATION Compare the inverse with original course code.
 project=setup_project; p=aero2_mechanical_parameters;
-model='aero2_mechanical_linearization';
-load_system(fullfile(project.simulink,[model '.slx']));
+model='aero2_mechanical_linearization_experiment';
+load_system(fullfile(project.experiments,[model '.slx']));
 load_system(fullfile(project.course,'model_AERO2_simul_R2021a.slx'));
 root=sfroot;
 original=root.find('-isa','Stateflow.EMChart','Path', ...

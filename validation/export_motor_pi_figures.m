@@ -1,8 +1,8 @@
 function export_motor_pi_figures
 %EXPORT_MOTOR_PI_FIGURES Export actual diagram and logged speed-loop results.
 project = setup_project;
-model = 'aero2_motor_pi';
-load_system(fullfile(project.simulink, [model '.slx']));
+model = 'aero2_motor_pi_experiment';
+load_system(fullfile(project.experiments, [model '.slx']));
 s = load(fullfile(project.results, 'motor_pi_validation.mat'));
 folder = fullfile(project.docs, 'figures');
 print(['-s' model], '-dpng', '-r140', fullfile(folder, 'motor_pi_diagram.png'));

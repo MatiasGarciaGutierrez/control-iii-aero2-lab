@@ -1,7 +1,7 @@
 function export_feedback_linearization_figures
 %EXPORT_FEEDBACK_LINEARIZATION_FIGURES Export actual model and logged signals.
-project=setup_project; model='aero2_mechanical_linearization';
-load_system(fullfile(project.simulink,[model '.slx']));
+project=setup_project; model='aero2_mechanical_linearization_experiment';
+load_system(fullfile(project.experiments,[model '.slx']));
 s=load(fullfile(project.results,'feedback_linearization_validation.mat'));
 r=s.nominal; folder=fullfile(project.docs,'figures');
 print(['-s' model],'-dpng','-r140',fullfile(folder,'feedback_linearization_diagram.png'));
