@@ -81,6 +81,23 @@ out = sim(model);
 
 The default references are +100 rad/s for the main motor and -100 rad/s for the tail motor, applied at 0.1 s. Change the Step blocks to select another speed. Gains are derived in `matlab/parameters/motor_pi_parameters.m`; the model stores them in its own workspace. For an existing saved model, rebuilding is optional. The [report](docs/report.md#question-1--motor-speed-pi-control) includes the hardware diagram, derivation, exact block settings and measured results. This stage regulates rotor speeds; body-angle control comes later.
 
+## Question 2: IP control and anti-windup
+
+```matlab
+project = setup_project;
+model = build_motor_ip;
+[nominal, recovery] = validate_motor_ip;
+export_motor_ip_figures;
+open_system(model);
+open_system([model '/Speed scope']);
+open_system([model '/Raw voltage scope']);
+open_system([model '/Voltage scope']);
+open_system([model '/Integrator scope']);
+out = sim(model);
+```
+
+The saved model defaults to IP with anti-windup. It retains the Question 1 gains and adds a 0.05 s tracking time. In its model workspace, `Beta=0` selects IP (`1` selects PI), and `Kaw=20` enables anti-windup (`0` disables it). Validation compares identical nominal steps, then an unreachable ±800 rad/s request followed by a return to ±100 rad/s. The [Question 2 report](docs/report.md#question-2--ip-control-with-anti-windup) explains the slower IP response, back-calculation blocks, reference settings and recovery evidence.
+
 The laboratory uses MATLAB R2021a. The working model includes an R2021a export, but actual R2021a execution remains unverified. Validation is performed in the available R2024b installation.
 
 ## Solo development workflow

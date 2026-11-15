@@ -1,6 +1,6 @@
 # AERO 2 laboratory development report
 
-This report grows with each feature PR. It records the reasoning, the implemented configuration, and the validation evidence. The work begins with simulator setup, followed by Question 1 motor PI control.
+This report grows with each feature PR. It records the reasoning, the implemented configuration, and the validation evidence. The work begins with simulator setup, followed by Question 1 motor PI control and Question 2 IP control with anti-windup.
 
 ## Simulator setup
 
@@ -252,3 +252,133 @@ Question 1 passes the stated simulation criteria. These gains have only been ass
 With the integration step reduced to 0.001 s, both motors settle in **0.319 s**, a 0.001 s change from the nominal simulation. The exact continuous-time expression predicts approximately 0.31924 s. This supports the timing conclusion and explains the small numerical difference. All original open-loop simulator checks also pass, the copied PI-model dynamics and sensor settings match the course plant, and the five course files remain byte-identical to `course-baseline`.
 
 MATLAB R2024b Code Analyzer reports no issues in the four new MATLAB functions. The R2021a-exported model was loaded and simulated in R2024b after clearing the workspace; its logged signals are finite. Actual R2021a execution and hardware validation have not been performed.
+
+## Question 2 — IP control with anti-windup
+
+### Requirement and reasoning
+
+The second task asks us to replace PI with IP **using the same parameters** and include anti-windup feedback. We retain $K_p=0.2163703919$ and $K_i=1.8416460633$. The mechanical plant remains the supplied nonlinear model; no position controller is present.
+
+For both structures, integral action uses the full speed error. Proportional action changes as follows:
+
+$$\text{PI:}\quad v_{\mathrm{raw}}=I+K_p(\omega_d-\omega),$$
+
+$$\text{IP:}\quad v_{\mathrm{raw}}=I-K_p\omega.$$
+
+The implementation provides both using a reference weight $\beta$:
+
+$$v_{\mathrm{raw}}=I+K_p(\beta\omega_d-\omega),\qquad
+\beta=1\text{ for PI},\quad\beta=0\text{ for IP}.$$
+
+For an unsaturated motor, the closed-loop denominator is unchanged:
+
+$$D(s)=s^2+(5.78+96.532K_p)s+96.532K_i=(s+13.3333)^2.$$
+
+The IP numerator is $96.532K_i$, whereas PI has $96.532(K_ps+K_i)$. Thus IP removes the reference-response zero. For a step of amplitude $A$ from rest, IP gives
+
+$$\omega(t)=A\left[1-(1+\lambda t)e^{-\lambda t}\right].$$
+
+This response is monotonic with our repeated real poles. Its exact continuous 2% settling time solves $(1+\lambda T_s)e^{-\lambda T_s}=0.02$, giving approximately **0.438 s**. It would be incorrect to expect exactly the Question 1 timing after changing the numerator while retaining the poles. Question 2 explicitly preserves the gains, so we report the difference rather than retuning it away. At the instant of the reference step, PI produces approximately 21.64 V; IP starts at zero voltage and builds its integral contribution.
+
+### Back-calculation anti-windup
+
+The motor voltage is limited to ±24 V. When raw voltage exceeds that limit, the motor cannot receive the requested action, but an ordinary integrator keeps accumulating error. This can delay recovery after a reachable command is restored.
+
+We use the actual limited voltage in a back-calculation path:
+
+$$v_{\mathrm{sat}}=\operatorname{sat}_{[-24,24]}(v_{\mathrm{raw}}),$$
+
+$$\dot I=K_i(\omega_d-\omega)
++K_{\mathrm{aw}}(v_{\mathrm{sat}}-v_{\mathrm{raw}}),\qquad
+K_{\mathrm{aw}}=\frac{1}{T_t}=20\ \mathrm{s^{-1}},\quad T_t=0.05\ \mathrm{s}.$$
+
+During positive saturation the correction is negative, opposing integral buildup; negative saturation reverses its sign. Without saturation, raw and applied voltage are equal and this term is exactly zero. The integral contribution has units of volts. It is **not** clipped to ±24 V: it must also compensate the proportional feedback term $-K_p\omega$. Anti-windup limits excess accumulation through feedback rather than imposing a fixed integral clamp.
+
+### Implemented files, blocks and selection
+
+`matlab/parameters/motor_ip_parameters.m` imports the original PI parameters and adds the reference weight, tracking time and recovery-step time. `matlab/build_motor_ip.m` extends the saved PI model into a separate `simulink/aero2_motor_ip.slx`, retaining Question 1 as a comparison baseline. It also exports an R2021a version. The original course files are unchanged.
+
+For each motor, inspect these additions:
+
+| Block | Purpose |
+|---|---|
+| Reference weight and proportional error | Form $\beta\omega_d-\omega$ for the proportional gain |
+| Voltage mismatch | Subtract raw voltage from the applied ±24 V limited voltage |
+| Anti-windup gain | Multiply that difference by $K_{\mathrm{aw}}$ |
+| Integral derivative | Add the anti-windup correction to $K_i e$ before integration |
+| Recovery change and combined reference | Add an optional second speed step for saturation/recovery tests |
+
+The model workspace stores `Beta=0` and `Kaw=20` by default: IP with anti-windup. `Beta=1` selects PI; `Kaw=0` disables anti-windup. These selections are independent, permitting controlled comparisons. For example, after opening the model:
+
+```matlab
+ws = get_param('aero2_motor_ip','ModelWorkspace');
+assignin(ws,'Beta',0);   % IP; use 1 for PI
+assignin(ws,'Kaw',20);   % Anti-windup; use 0 to disable
+```
+
+The parameter function sets builder defaults; the workspace values select the currently loaded model. Validation uses temporary `SimulationInput` overrides and retains the saved defaults.
+
+Default first Step blocks command main +100 and tail -100 rad/s at 0.1 s. The recovery Step blocks change the command by zero at 1.1 s, so they have no effect in the default 1 s run. All reference blocks are continuous (`SampleTime=0`). For the stress test, the first steps command +800/-800 rad/s; second steps add -700/+700 rad/s at 1.1 s, returning to +100/-100 rad/s. Simulation runs until 5 s. Both tests retain ideal measurements and the 0.002 s Euler step.
+
+The stress request is intentionally unreachable: the nominal motor model and ±24 V limit permit at most approximately $96.532(24)/5.78=400.8$ rad/s at steady state. These are simulated voltages and speeds, not approved hardware operating commands.
+
+The existing Speed, Error and Voltage scopes retain their Question 1 channel order. Two new scopes show main/tail **raw voltage** and **integral contribution**. The same 14-column `out.motor_data` layout records references, speeds, errors, raw voltages, applied voltages, integral contributions and yaw/pitch angles. Compare raw and applied voltage to identify saturation.
+
+![Actual IP and anti-windup Simulink diagram export](figures/motor_ip_diagram.png)
+
+### Validation method and reproduction
+
+```matlab
+project = setup_project;
+model = build_motor_ip;
+[nominal, recovery] = validate_motor_ip;
+export_motor_ip_figures;
+open_system(model);
+open_system([model '/Speed scope']);
+open_system([model '/Voltage scope']);
+open_system([model '/Raw voltage scope']);
+open_system([model '/Integrator scope']);
+out = sim(model);
+```
+
+For saved models, rebuilding is optional. `validation/validate_motor_ip.m` compares PI, IP and IP with anti-windup for both signed pairs of ±100 rad/s commands. It checks agreement with independent analytical responses, no nominal saturation, monotonic IP behavior and equality of unsaturated IP results with anti-windup enabled/disabled. The original gains and course dynamics are checked directly.
+
+The saturation test compares IP with and without anti-windup, in both voltage directions, using the same unreachable command and return time. It requires finite logged signals, actual saturation at ±24 V, final speed error below 0.1 rad/s, faster recovery with anti-windup, and less than half the peak integral accumulation. For this finite-duration experiment, an additional 250 V peak integral bound detects excessive accumulation; it is a test acceptance threshold, not an integrator clamp or a universal bound for arbitrary commands. Recovery time is measured from the 1.1 s return command until speed enters and remains within ±2 rad/s of its restored ±100 rad/s target. The saturation test is repeated with a 0.001 s integration step, requiring recovery-time agreement within 0.02 s. A zero-reference test checks equilibrium.
+
+Raw recordings, the refinement run and CSV metrics are saved in ignored `results/`. Figures below plot the exact logged Scope signals and export the actual diagram; they are not native-window screenshots.
+
+![PI versus IP on identical nominal speed commands](figures/motor_ip_nominal.png)
+
+![IP saturation and recovery with and without anti-windup](figures/motor_ip_recovery.png)
+
+### Results and interpretation
+
+For both motors and both command signs, the nominal results are:
+
+| Metric | PI, no anti-windup | IP, no anti-windup | IP with anti-windup |
+|---|---:|---:|---:|
+| 2% settling time from the 0.1 s step | 0.318 s | 0.434 s | 0.434 s |
+| Overshoot | 3.7021% | 0% | 0% |
+| Peak absolute applied voltage | 21.6370 V | 7.3591 V | 7.3591 V |
+| Absolute final speed error at 1 s | 0.003124 rad/s | 0.006958 rad/s | 0.006958 rad/s |
+| Time in saturation | 0 s | 0 s | 0 s |
+
+IP is slower but monotonic, consistent with the changed numerator and unchanged poles. Anti-windup has no effect on these unsaturated IP responses; the recorded arrays with it enabled and disabled agree within 1e-9. We have not retuned the gains to conceal the timing difference requested by the exercise.
+
+For the intentionally unreachable ±800 rad/s command, followed by a return to ±100 rad/s at 1.1 s:
+
+| Metric | IP without anti-windup | IP with anti-windup |
+|---|---:|---:|
+| Recovery settling time after return | 1.898 s | 0.570 s |
+| Peak absolute integral contribution over the full run | 869.91 V | 147.26 V |
+| Time saturated after return | 1.372 s | 0.042 s |
+| Peak absolute applied voltage over the full run | 24 V | 24 V |
+| Absolute final speed error at 5 s | Below 1e-8 rad/s | Below 1e-8 rad/s |
+
+These values are the same for both motors and sign directions. Without anti-windup, the stored integral action keeps the voltage saturated well after the reference has become reachable. Back-calculation reduces that stored excess and allows the loop to recover about 70% faster. The peak integral contribution is about 83% smaller. Both variants eventually recover; the improvement concerns transient behavior, not a different feasible steady-state target.
+
+Question 2 meets the intended simulation objectives: unchanged gains, a verified IP reference response, effective anti-windup in both directions, finite states and reduced integral accumulation. The speed controller is still independent of body-angle regulation. The tests are simulation evidence and do not authorize applying the stress commands to the physical apparatus.
+
+The half-step saturation run recovers in **0.572 s**, versus 0.570 s at the supplied step. Independent single-motor tests keep the uncommanded motor at rest, and the Question 1 regression suite still passes. Code Analyzer reports no issues in the four new functions. The R2021a export runs in R2024b after clearing the workspace, with finite recorded signals; actual R2021a execution remains unverified. All five course files are byte-identical to the course baseline.
+
+The native scopes default to a 1 s time span for the nominal experiment. If manually running the 5 s stress test, change their Time span to 5 s to view the full transient. The exported recovery figure already shows the complete 5 s record.
