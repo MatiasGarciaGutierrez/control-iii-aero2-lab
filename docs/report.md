@@ -44,9 +44,9 @@ Press **Run**. A Scope displays its connected signals against simulation time. D
 
 Before designing feedback, we checked that known voltages produce the expected motor response:
 
-$$
+```math
 \dot\omega=-5.78\omega+96.532v.
-$$
+```
 
 The separate [open-loop preparation model](../simulink/aero2_simulator.slx) copies the supplied plant and applies +1 V to the main motor and -1 V to the tail motor from 0.1 to 0.3 s. Its Pulse Generator settings are period 10 s, width 2%, delay 0.1 s and continuous sample time 0. Voltage is limited to ±24 V; simulation ends at 1 s.
 
@@ -66,29 +66,35 @@ Design a PI controller for the propeller speeds with approximately **0.3 s settl
 
 The supplied motor equation gives the transfer function
 
-$$
+```math
 P(s)=\frac{96.532}{s+5.78}.
-$$
+```
 
 Define the speed error $e=\omega_d-\omega$. The PI controller is
 
-$$
+```math
 v_{\mathrm{raw}}=K_pe+I,\qquad \dot I=K_ie.
-$$
+```
 
 The closed-loop denominator is
 
-$$
+```math
 s^2+(5.78+96.532K_p)s+96.532K_i.
-$$
+```
 
 We match it to $(s+\lambda)^2$, giving two repeated real poles. Using $T_s\approx4/\lambda$ as a starting estimate:
 
-$$
-\lambda=\frac4{0.3}=13.3333,\qquad
-K_p=\frac{2\lambda-5.78}{96.532}=0.2163704,\qquad
+```math
+\lambda=\frac4{0.3}=13.3333.
+```
+
+```math
+K_p=\frac{2\lambda-5.78}{96.532}=0.2163704.
+```
+
+```math
 K_i=\frac{\lambda^2}{96.532}=1.8416461.
-$$
+```
 
 Both motors use these gains because their supplied motor equations are identical. The calculation is in [motor_pi_parameters.m](../matlab/parameters/motor_pi_parameters.m).
 
@@ -139,13 +145,13 @@ Replace PI with IP **using the same gains**, and include anti-windup feedback.
 
 The integral term still uses the speed error. Proportional action now uses measured speed:
 
-$$
+```math
 \text{PI:}\quad v_{\mathrm{raw}}=I+K_p(\omega_d-\omega),
-$$
+```
 
-$$
+```math
 \text{IP:}\quad v_{\mathrm{raw}}=I-K_p\omega.
-$$
+```
 
 A reference step therefore causes no immediate proportional voltage jump in IP. Keeping the gains preserves the closed-loop poles, but removes the PI reference-response zero. With our repeated real poles, the ideal IP step response is monotonic and slower. IP does not guarantee zero overshoot for arbitrary gains or plants.
 
@@ -155,14 +161,17 @@ The amplifier cannot apply more than ±24 V. During saturation, ordinary integra
 
 We feed the difference between applied and requested voltage back into the integrator:
 
-$$
+```math
 v_{\mathrm{sat}}=\mathrm{sat}_{[-24,24]}(v_{\mathrm{raw}}),
-$$
+```
 
-$$
+```math
 \dot I=K_i(\omega_d-\omega)+K_{\mathrm{aw}}(v_{\mathrm{sat}}-v_{\mathrm{raw}}),
-\qquad K_{\mathrm{aw}}=\frac1{0.05}=20\ \mathrm{s^{-1}}.
-$$
+```
+
+```math
+K_{\mathrm{aw}}=\frac1{0.05}=20\ \mathrm{s^{-1}}.
+```
 
 If raw voltage exceeds +24 V, the correction is negative and opposes integral buildup. Without saturation, the correction is zero. The integral contribution is not itself clipped to ±24 V; it must also compensate the term $-K_p\omega$.
 
@@ -213,27 +222,50 @@ Assume perfect motor tracking, $\omega=\omega_d$. Find a control law that linear
 
 The simplified mechanical model is
 
-$$
+```math
 M_q(q)\ddot q+c_q(q,\dot q)+g_q(q)=\Gamma(\theta)s,
-\qquad s=\begin{bmatrix}\omega_m|\omega_m|\\\omega_t|\omega_t|\end{bmatrix}.
-$$
+```
+
+```math
+s=\begin{bmatrix}
+\omega_m|\omega_m| \\
+\omega_t|\omega_t|
+\end{bmatrix}.
+```
 
 Here $M_q$ describes inertia, $c_q$ contains velocity-dependent terms, $g_q$ describes gravity and $\Gamma$ maps rotor action to yaw/pitch torque. Their expressions from page 5 of the guide are
 
-$$
-M_q=\begin{bmatrix}J_\psi\cos^2\theta+j_\psi\sin^2\theta&0\\0&J_\theta\end{bmatrix},
-$$
+```math
+M_q=\begin{bmatrix}
+J_\psi\cos^2\theta+j_\psi\sin^2\theta&0 \\
+0&J_\theta
+\end{bmatrix},
+```
 
-$$
-c_q=\begin{bmatrix}-(J_\psi-j_\psi)\sin(2\theta)\dot\theta\dot\psi\\
-\frac12(J_\psi-j_\psi)\sin(2\theta)\dot\psi^2\end{bmatrix},
-\qquad g_q=\begin{bmatrix}0\\G\sin\theta\end{bmatrix},
-$$
+```math
+c_q=\begin{bmatrix}
+-(J_\psi-j_\psi)\sin(2\theta)\dot\theta\dot\psi \\
+\frac12(J_\psi-j_\psi)\sin(2\theta)\dot\psi^2
+\end{bmatrix},
+```
 
-$$
-\Gamma(\theta)=\begin{bmatrix}\cos\theta&0\\0&1\end{bmatrix}
-\begin{bmatrix}-k_t&Lk_f\\Lk_f&k_t\end{bmatrix}.
-$$
+```math
+g_q=\begin{bmatrix}
+0 \\
+G\sin\theta
+\end{bmatrix},
+```
+
+```math
+\Gamma(\theta)=\begin{bmatrix}
+\cos\theta&0 \\
+0&1
+\end{bmatrix}
+\begin{bmatrix}
+-k_t&Lk_f \\
+Lk_f&k_t
+\end{bmatrix}.
+```
 
 Choose a virtual acceleration $a=[a_\psi,a_\theta]^T$. The control law has three steps:
 
@@ -243,10 +275,13 @@ Choose a virtual acceleration $a=[a_\psi,a_\theta]^T$. The control law has three
 
 Substitution shows why this works:
 
-$$
-\ddot q=M_q^{-1}(\Gamma s-c_q-g_q)
-=M_q^{-1}(M_q a+c_q+g_q-c_q-g_q)=a.
-$$
+```math
+\begin{aligned}
+\ddot q &= M_q^{-1}(\Gamma s-c_q-g_q) \\
+&= M_q^{-1}(M_q a+c_q+g_q-c_q-g_q) \\
+&= a.
+\end{aligned}
+```
 
 This is **feedback linearization**, not a Taylor approximation around an equilibrium. The nonlinear terms are evaluated at the current state and canceled in the ideal model.
 
@@ -256,16 +291,18 @@ The implementation uses a matrix solve and signed square root in [aero2_feedback
 
 The four mechanical states remain
 
-$$
-z=\begin{bmatrix}\psi&\theta&\dot\psi&\dot\theta\end{bmatrix}^T.
-$$
+```math
+z=\begin{bmatrix}
+\psi&\theta&\dot\psi&\dot\theta
+\end{bmatrix}^T.
+```
 
 Their dynamics become
 
-$$
+```math
 \dot z_1=z_3,\quad\dot z_2=z_4,\quad
 \dot z_3=a_\psi,\quad\dot z_4=a_\theta.
-$$
+```
 
 These are two double integrators. The motor states are excluded by the perfect-tracking assumption. Each angle is obtained by integrating its virtual acceleration twice.
 
