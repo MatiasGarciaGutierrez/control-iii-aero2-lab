@@ -11,7 +11,7 @@ Part II of the Automatic Control III computer-room laboratory. We develop and va
 ├── .gitignore
 ├── setup_project.m
 ├── course/                 Original course documents, script and model
-├── matlab/                 Model builders and motor PI parameters
+├── matlab/                 Model builders, parameters and mechanical inverse
 ├── simulink/               Open-loop and motor PI models; R2021a exports
 ├── validation/             Simulator and motor PI checks; figure exports
 ├── docs/                   Growing report and selected figures
@@ -19,7 +19,7 @@ Part II of the Automatic Control III computer-room laboratory. We develop and va
     └── pull_request_template.md
 ```
 
-Implementation is organized as follows; controller and mechanics directories will be added when their first feature needs them:
+Implementation is organized as follows; new directories are added when their first feature needs them:
 
 | Directory | Purpose |
 |---|---|
@@ -97,6 +97,22 @@ out = sim(model);
 ```
 
 The saved model defaults to IP with anti-windup. It retains the Question 1 gains and adds a 0.05 s tracking time. In its model workspace, `Beta=0` selects IP (`1` selects PI), and `Kaw=20` enables anti-windup (`0` disables it). Validation compares identical nominal steps, then an unreachable ±800 rad/s request followed by a return to ±100 rad/s. The [Question 2 report](docs/report.md#question-2--ip-control-with-anti-windup) explains the slower IP response, back-calculation blocks, reference settings and recovery evidence.
+
+## Question 3: mechanical feedback linearization
+
+```matlab
+project = setup_project;
+model = build_feedback_linearization;
+checks = validate_feedback_linearization;
+export_feedback_linearization_figures;
+open_system(model);
+open_system([model '/Acceleration scope']);
+open_system([model '/Angle scope']);
+open_system([model '/Rotor command scope']);
+out = sim(model);
+```
+
+`simulink/aero2_mechanical_linearization.slx` assumes perfect motor-speed tracking. Its inverse maps virtual yaw/pitch acceleration to desired main/tail rotor speeds, yielding two double integrators in the ideal course model. The test applies acceleration pulses; it does not command angle setpoints. A ±60° pitch simulation envelope is enforced with an assertion. The [Question 3 report](docs/report.md#question-3--mechanical-feedback-linearization) derives the inverse and linearized states, explains the singularities and actuator limitations, and records independent substitution/simulation checks. The 3 s position controller is Question 4 and is not included here.
 
 The laboratory uses MATLAB R2021a. The working model includes an R2021a export, but actual R2021a execution remains unverified. Validation is performed in the available R2024b installation.
 
