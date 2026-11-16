@@ -29,8 +29,11 @@ for question=questions
         end
     elseif question==3
         sources={'Virtual acceleration a/1','Angles and rates/1', ...
-            'Angles and rates/2','Mechanical inverse/1'};
-        columns=[1:2 5:10];
+            'Angles and rates/2','Mechanical inverse/1','Ideal-speed course mechanics/2'};
+        columns=[1:2 5:10 3:4];
+        assertConnection(model,'Angles and rates',2,'Rate scope',1);
+        assertConnection(model,'Virtual acceleration a',1,'Acceleration scope',1);
+        assertConnection(model,'Ideal-speed course mechanics',2,'Acceleration scope',2);
     elseif question==4
         sources={'Desired orientation/1','Angles and rates/1','Angles and rates/2', ...
             'Desired acceleration/1','Mechanical inverse/1','Position error/1'};
@@ -95,4 +98,12 @@ else
     data=reshape(signal.Data,width,[])';
 end
 assert(all(isfinite(data(:))),'A simulation produced nonfinite data.');
+end
+
+function assertConnection(model,source,sourcePort,destination,destinationPort)
+a=get_param([model '/' source],'PortHandles');
+b=get_param([model '/' destination],'PortHandles');
+line=get_param(b.Inport(destinationPort),'Line');
+assert(line~=-1 && get_param(line,'SrcPortHandle')==a.Outport(sourcePort), ...
+    'A motion scope is disconnected or displays the wrong signal.');
 end

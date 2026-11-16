@@ -12,6 +12,7 @@ while ~isempty(lines)
     lines=find_system(model,'FindAll','on','SearchDepth',1,'Type','line');
 end
 delete_block([model '/Virtual acceleration a']);
+% Reconnect inherited motion scopes using the position-controller signals.
 notes=find_system(model,'FindAll','on','Type','annotation');
 for k=1:numel(notes), delete(get_param(notes(k),'Object')); end
 workspace=get_param(model,'ModelWorkspace');
@@ -56,6 +57,7 @@ note=Simulink.Annotation(model,sprintf([ ...
     'a=Kq*(q_d-q)-Dq*dq; Kq=%.7f, Dq=%.7f; 2%% settling target 3 s\n' ...
     'q_d=[0.2;0.1] rad at 0.2 s; x(0)=0; inherited +/-60 deg pitch simulation envelope'],p.kp,p.kd));
 note.Position=[35 25 1400 120];
+configure_activity_scopes(model,4);
 save_system(model);
 Simulink.exportToVersion(model,fullfile(project.simulink,[model '_R2021a.slx']),'R2021a');
 end

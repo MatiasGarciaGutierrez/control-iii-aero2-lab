@@ -21,14 +21,17 @@ The plant inputs `V1` and `V2` are the main and tail motor voltages. Propeller s
 
 Start with the **simple answer models** in `simulink/`. They contain the essential control connections, a basic reference and basic scopes.
 
-| Question | Simple answer model |
-|---|---|
-| 1 — PI motor control | [aero2_motor_pi.slx](../simulink/aero2_motor_pi.slx) |
-| 2 — IP with anti-windup | [aero2_motor_ip.slx](../simulink/aero2_motor_ip.slx) |
-| 3 — Feedback linearization | [aero2_mechanical_linearization.slx](../simulink/aero2_mechanical_linearization.slx) |
-| 4 — Yaw/pitch position control | [aero2_position_control.slx](../simulink/aero2_position_control.slx) |
-| 5 — Complete cascade | [aero2_cascade_control.slx](../simulink/aero2_cascade_control.slx) |
-| Optional — Position integral action | [aero2_position_integral.slx](../simulink/aero2_position_integral.slx) |
+| Activity | File to open in Simulink | Available views |
+|---|---|---|
+| Preparation | [aero2_simulator.slx](../simulink/aero2_simulator.slx) | Voltage, rotor speed/acceleration, body angle/rate/acceleration |
+| 1 — PI motor-speed control | [aero2_motor_pi.slx](../simulink/aero2_motor_pi.slx) | Speed, speed error, motor acceleration, voltage |
+| 2 — IP with anti-windup | [aero2_motor_ip.slx](../simulink/aero2_motor_ip.slx) | Speed, error, motor acceleration, applied/raw voltage, motor integral |
+| 3 — Feedback linearization | [aero2_mechanical_linearization.slx](../simulink/aero2_mechanical_linearization.slx) | Body angle, rate, commanded/actual acceleration |
+| 4 — Ideal position control | [aero2_position_control.slx](../simulink/aero2_position_control.slx) | Body angle, rate, commanded/actual acceleration, position error, rotor commands |
+| 5 — Complete cascade | [aero2_cascade_control.slx](../simulink/aero2_cascade_control.slx) | Body motion, position error, rotor speed/acceleration, voltage and motor integral |
+| Optional — Position integral action | [aero2_position_integral.slx](../simulink/aero2_position_integral.slx) | Body motion, rotor speed/acceleration, voltage, motor and position integrals |
+
+Open the file in the table, press **Run**, then double-click a Scope. Use the files directly under `simulink/` for the activity answers. Files under `simulink/experiments/` are the separate diagnostic tests. On laboratory MATLAB R2021a, open the matching `_R2021a.slx` export (for example, `aero2_motor_pi_R2021a.slx`).
 
 Separate copies in `simulink/experiments/` contain recovery-step generators, comparison switches and detailed logging. Those blocks support validation; they are not extra parts of the required controller. Experiment filenames add `_experiment` before `.slx`.
 
@@ -43,7 +46,22 @@ open_system('aero2_motor_ip/Voltage scope');
 
 Press **Run**. A Scope displays its connected signals against simulation time. Double-click reference blocks to inspect their settings.
 
+### Where to find the Scopes
+
+- **Questions 1–2:** `Speed scope` compares desired/measured main and tail speeds; `Error scope` shows speed error; `Motor acceleration scope` shows actual rotor acceleration; `Voltage scope` shows applied voltage. Question 2 also has `Raw voltage scope` and `Integral scope`.
+- **Questions 3–4:** `Angle scope` shows yaw/pitch position, `Rate scope` shows body angular velocity, and `Acceleration scope` compares commanded and actual body acceleration. Question 4 adds `Error scope` and `Rotor command scope`.
+- **Question 5 and optional:** open `Angle scope`, `Rate scope`, `Acceleration scope`, `Rotor speed scope`, `Motor acceleration scope` and `Voltage scope`. Open **IP motor control** for its `Raw voltage scope` and `Integral scope`. Question 5 has a top-level `Error scope`; the optional model has `Error scope` and `Integral scope` inside **Position integral control**.
+- **Preparation:** `Body angle scope`, `Rate scope`, `Acceleration scope`, `Rotor speed scope`, `Motor acceleration scope` and `Voltage scope` show the open-loop motion.
+
+Body and rotor accelerations have the same units (rad/s²) but describe different physical motion. Actual acceleration is observed directly from the plant's existing derivative signals; no numerical differentiation is introduced. The extra plant outputs are passive monitors: the mechanical/motor equations, sensor settings, controller gains and references are preserved. In the full cascade, actual body acceleration can differ from the commanded acceleration because motor tracking takes time.
+
+The Scope audit checks all seven activity models and their exports in R2024b. Required inputs are connected, acceleration discrepancies stay below $3.1\times10^{-12}$ rad/s², and the Question 1–5 and optional simple/experiment pairs match exactly.
+
+The simulation comparisons and recovery generators remain in the experiment copies. Scope additions do not make the simple step inputs identical to every experiment in this report. Later hardware-validation activities have no executable hardware model yet; they require professor approval and the actual device interface.
+
 ## Preparation — Check the supplied simulator
+
+**File to open in Simulink:** [aero2_simulator.slx](../simulink/aero2_simulator.slx).
 
 Before designing feedback, we checked that known voltages produce the expected motor response:
 
@@ -60,6 +78,8 @@ Its Voltage, Rotor speed and Body angle scopes show the applied inputs, motor re
 **Result:** zero voltage and zero initial state remain at rest. The maximum speed discrepancy from the analytical motor response is 0.0357 rad/s, below the 0.15 rad/s acceptance threshold. Voltage clipping and the sensor switch also pass their checks. See [validate_simulator.m](../validation/validate_simulator.m).
 
 ## Question 1 — PI motor-speed control
+
+**File to open in Simulink:** [aero2_motor_pi.slx](../simulink/aero2_motor_pi.slx).
 
 ### What the guide asks
 
@@ -124,7 +144,7 @@ The controller computes voltage; we no longer prescribe voltage pulses. The AERO
 
 ### Simulation and result
 
-The [PI experiment copy](../simulink/experiments/aero2_motor_pi_experiment.slx) adds error plots and logging. We test each motor independently, both command signs, simultaneous commands and zero reference using [validate_motor_pi.m](../validation/validate_motor_pi.m).
+The [PI experiment copy](../simulink/experiments/aero2_motor_pi_experiment.slx) adds diagnostic logging for repeatable tests. We test each motor independently, both command signs, simultaneous commands and zero reference using [validate_motor_pi.m](../validation/validate_motor_pi.m).
 
 ![PI speed, error and voltage for positive and negative commands](figures/motor_pi_steps.png)
 
@@ -139,6 +159,8 @@ The [PI experiment copy](../simulink/experiments/aero2_motor_pi_experiment.slx) 
 **Conclusion:** the PI meets our agreed 0.24–0.36 s interpretation of “approximately 0.3 s.” A 0.001 s integration step gives 0.319 s, supporting the timing result.
 
 ## Question 2 — IP control with anti-windup
+
+**File to open in Simulink:** [aero2_motor_ip.slx](../simulink/aero2_motor_ip.slx).
 
 ### What the guide asks
 
@@ -216,6 +238,8 @@ Both motors and both sign directions give these results. Applied voltage remains
 **Conclusion:** IP gives the expected same-gain comparison, and anti-windup reduces excess integral accumulation and improves recovery. It does not make an unreachable speed achievable.
 
 ## Question 3 — Mechanical feedback linearization
+
+**File to open in Simulink:** [aero2_mechanical_linearization.slx](../simulink/aero2_mechanical_linearization.slx).
 
 ### What the guide asks
 
@@ -433,6 +457,24 @@ The simple model starts with zero angles and rates. One vector Step changes virt
 
 This model commands acceleration, not angle setpoints. The inverse calculates rotor speeds; the ideal-speed mechanics uses them immediately. The mechanics block outputs `dx`, the four state derivatives. The **Mechanical state** integrator produces `x`; **Angles and rates** separates it into `q` and `dq` for feedback. There is no position controller yet.
 
+The simple model now exposes all three motion quantities directly:
+
+| Scope | Signals | Units |
+|---|---|---|
+| **Angle scope** | Yaw and pitch position | rad |
+| **Rate scope** | Yaw and pitch body angular velocity | rad/s |
+| **Acceleration scope** | Commanded yaw/pitch acceleration on input 1; actual yaw/pitch acceleration on input 2 | rad/s² |
+
+Actual acceleration comes directly from the mechanical equations, not from numerically differentiating a measured velocity. The command and actual traces should overlap under ideal motor tracking. These body velocities are distinct from the main/tail propeller speeds.
+
+```matlab
+open_system('aero2_mechanical_linearization/Angle scope');
+open_system('aero2_mechanical_linearization/Rate scope');
+open_system('aero2_mechanical_linearization/Acceleration scope');
+```
+
+Press **Run** to fill the Scopes. The report's plots below use the separate pulse experiment and nonzero initial rates. The simple model retains its original acceleration step and zero initial state, so its curves differ: acceleration stays constant after 0.2 s, velocity ramps, and position follows a parabola.
+
 ### Separate simulation experiment and result
 
 The [feedback-linearization experiment](../simulink/experiments/aero2_mechanical_linearization_experiment.slx) uses a different demonstration input to test the cancellation:
@@ -479,6 +521,8 @@ The separate residual figure shows acceleration errors around $10^{-17}$ rad/s²
 **Conclusion:** the compensated ideal mechanics behaves as two double integrators. No equilibrium approximation was needed. Choosing $a$ to regulate position and meet the 3 s target is Question 4.
 
 ## Question 4 — AERO 2 yaw/pitch position control
+
+**File to open in Simulink:** [aero2_position_control.slx](../simulink/aero2_position_control.slx).
 
 ### What the guide asks
 
@@ -546,11 +590,11 @@ The **Position error** block forms $q_d-q$. **Position gain** multiplies it by `
 | Measurements and motors | Ideal state measurements and perfect rotor-speed tracking |
 | Pitch simulation envelope | ±60°, enforced by the inverse |
 
-The **Angle scope** receives desired yaw/pitch on its first vector input and measured yaw/pitch on its second. There are no experiment selectors or logging bundles in this simple answer.
+The **Angle scope** receives desired yaw/pitch on its first vector input and measured yaw/pitch on its second. **Rate scope** shows body angular velocities; **Acceleration scope** compares commanded and actual body acceleration. **Error scope** and **Rotor command scope** show the remaining position-controller signals. There are no experiment selectors or logging bundles in this simple answer.
 
 ### Separate experiments and measured results
 
-The [position-control experiment](../simulink/experiments/aero2_position_control_experiment.slx) adds error, rate, acceleration, rotor-command and residual scopes. [validate_position_control.m](../validation/validate_position_control.m) tests yaw-only ±0.1 rad, pitch-only ±0.1 rad, and simultaneous commands `[0.2;0.1]` and `[-0.2;-0.1]` rad.
+The [position-control experiment](../simulink/experiments/aero2_position_control_experiment.slx) adds acceleration-residual checks and detailed logging; its motion Scopes are inherited from the simple model. [validate_position_control.m](../validation/validate_position_control.m) tests yaw-only ±0.1 rad, pitch-only ±0.1 rad, and simultaneous commands `[0.2;0.1]` and `[-0.2;-0.1]` rad.
 
 ![Single-axis and simultaneous position steps with ideal rotor tracking](figures/position_control_steps.png)
 
@@ -582,11 +626,15 @@ metrics = validate_position_control;
 export_position_control_figures;
 open_system(fullfile(project.simulink,'aero2_position_control.slx'));
 open_system('aero2_position_control/Angle scope');
+open_system('aero2_position_control/Rate scope');
+open_system('aero2_position_control/Acceleration scope');
 ```
 
 Press **Run** to view the simple model. Rebuilding is optional for the saved models. `build_position_control` creates the simple answer; `build_position_control_experiment` makes the diagnostic copy. Only that copy records `out.position_data`, with paired columns for references (1–2), angles (3–4), rates (5–6), virtual acceleration (7–8), main/tail speeds (9–10), position errors (11–12), recovered acceleration (13–14) and acceleration residuals (15–16).
 
 ## Question 5 — Connect and validate the complete controller
+
+**File to open in Simulink:** [aero2_cascade_control.slx](../simulink/aero2_cascade_control.slx).
 
 ### What the guide asks
 
@@ -622,7 +670,7 @@ Open [aero2_cascade_control.slx](../simulink/aero2_cascade_control.slx). The pos
 
 ![Inside the IP motor-control subsystem](figures/cascade_ip_diagram.png)
 
-The proportional term uses measured speed. The integral term uses speed error and the difference between limited and raw voltage. The supplied **Course nonlinear plant**, including its amplifier, mechanical/motor equations, noise and quantizer, is copied unchanged.
+The proportional term uses measured speed. The integral term uses speed error and the difference between limited and raw voltage. The supplied **Course nonlinear plant**, including its amplifier, mechanical/motor equations, noise and quantizer, retains its equations and sensor/amplifier settings; passive acceleration outputs are added.
 
 | Setting | Value |
 |---|---|
@@ -641,7 +689,10 @@ These figures are Simulink diagram exports, not UI screenshots. There is no manu
 | Basic Scope | Connected signals |
 |---|---|
 | **Angle scope** | Desired and measured yaw/pitch vectors |
+| **Rate scope** | Measured yaw/pitch body angular velocities |
+| **Acceleration scope** | Commanded and actual body angular accelerations |
 | **Rotor speed scope** | Desired and measured main/tail speed vectors |
+| **Motor acceleration scope** | Actual main/tail rotor angular accelerations |
 | **Voltage scope** | Applied main/tail voltages |
 
 The simple model has no logging bundle or experiment selectors. The [experiment copy](../simulink/experiments/aero2_cascade_control_experiment.slx) adds a selectable reference recording and detailed logging. It also exposes the true simulated state for comparison with noisy measurements, without changing the dynamics.
@@ -715,6 +766,8 @@ validate_question_models(5);
 export_cascade_control_figures;
 open_system(fullfile(project.simulink,'aero2_cascade_control.slx'));
 open_system('aero2_cascade_control/Angle scope');
+open_system('aero2_cascade_control/Rate scope');
+open_system('aero2_cascade_control/Acceleration scope');
 open_system('aero2_cascade_control/Rotor speed scope');
 open_system('aero2_cascade_control/Voltage scope');
 ```
@@ -725,11 +778,13 @@ The saved models and R2021a exports are simulated in MATLAB R2024b. Actual R2021
 
 ## Optional — Position integral action
 
+**File to open in Simulink:** [aero2_position_integral.slx](../simulink/aero2_position_integral.slx).
+
 ### Purpose and controller
 
 The guide asks us to add position integral action without significantly changing settling time. The motor IP integrators already control rotor speed; these new integrators accumulate **yaw/pitch position error**. They help reject persistent external torques that the nominal inverse does not know about.
 
-Question 5 remains unchanged. The separate optional controller uses
+Question 5 remains the controller baseline. The separate optional controller uses
 
 ```math
 \dot J=K_i^q(q_d-q),\qquad
@@ -779,11 +834,11 @@ This preserves the original ideal 3 s step response from rest. The additional po
 
 ![Inside the position-integral controller](figures/position_integral_controller.png)
 
-The figures above are Simulink diagram exports. Open [aero2_position_integral.slx](../simulink/aero2_position_integral.slx). Double-click **Position integral control** to see the gains, integral contribution and anti-windup gate. The default reference is still yaw 0.2 rad and pitch 0.1 rad at 0.2 s, from rest. The motor IP gains, nominal ±24 V limits, 0.002 s solver step, ideal sensors and three basic Scopes are retained from Question 5.
+The figures above are Simulink diagram exports. Open [aero2_position_integral.slx](../simulink/aero2_position_integral.slx). Double-click **Position integral control** to see the gains, integral contribution and anti-windup gate. The default reference is still yaw 0.2 rad and pitch 0.1 rad at 0.2 s, from rest. The motor IP gains, nominal ±24 V limits, 0.002 s solver step, ideal sensors and the body/motor motion Scopes are retained from Question 5. The two integral contributions are visible inside their respective controller subsystems.
 
 The new outer anti-windup rule pauses **both** position integrators whenever either motor's raw voltage differs from its limited voltage. Otherwise, $\dot J=K_i^q(q_d-q)$. Both axes pause because rotor action is coupled. This conservative rule prevents accumulation during voltage saturation; it does not actively discharge stored integral action or account for every possible hardware constraint. The motor-loop back-calculation remains active as well.
 
-The simple plant is copied unchanged. Only the [experiment copy](../simulink/experiments/aero2_position_integral_experiment.slx) adds external torque injection, temporary voltage-authority changes, an outer anti-windup comparison parameter and logging. External torque is added through $\Delta\ddot q=M_q(q)^{-1}\tau_d$; the nonlinear inverse is not told its value.
+The simple plant retains its equations and sensor/amplifier settings; passive acceleration outputs are added. Only the [experiment copy](../simulink/experiments/aero2_position_integral_experiment.slx) adds external torque injection, temporary voltage-authority changes, an outer anti-windup comparison parameter and logging. External torque is added through $\Delta\ddot q=M_q(q)^{-1}\tau_d$; the nonlinear inverse is not told its value.
 
 ### Nominal results and tradeoff
 
@@ -843,6 +898,8 @@ validate_position_integral_models;
 export_position_integral_figures;
 open_system(fullfile(project.simulink,'aero2_position_integral.slx'));
 open_system('aero2_position_integral/Angle scope');
+open_system('aero2_position_integral/Rate scope');
+open_system('aero2_position_integral/Acceleration scope');
 ```
 
 The experiment records `out.integral_data`. Its first 24 columns match the Question 5 logging order; columns 25–26 are the outer integral contribution and 27–28 are the applied external torques. Raw data and metrics go under `results/position_integral_*`.
@@ -874,6 +931,7 @@ validate_motor_ip;
 validate_feedback_linearization;
 validate_position_control;
 validate_cascade_control;
+validate_activity_scopes;
 validate_question_models;
 export_motor_pi_figures;
 export_motor_ip_figures;
