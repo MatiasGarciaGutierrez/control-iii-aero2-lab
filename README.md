@@ -37,6 +37,14 @@ The optional model adds position integral action and outer anti-windup without r
 
 The [report](docs/report.md) shows the simple diagrams first, then derives each controller and explains the separate experiment settings and results.
 
+## Position control on the professor's hardware model
+
+The adapted full cascade is [simulink/aero2_hardware_cascade.slx](simulink/aero2_hardware_cascade.slx). For laboratory MATLAB R2021a, open [aero2_hardware_cascade_R2021a.slx](simulink/aero2_hardware_cascade_R2021a.slx). The professor's files remain unchanged in [real_hardware/](real_hardware/). Read [docs/hardware.md](docs/hardware.md) for the channel mapping and laboratory checks.
+
+To simulate without QUARC or a device, open [aero2_hardware_cascade_offline.slx](simulink/experiments/aero2_hardware_cascade_offline.slx). It uses the same controller, the course plant and equivalent hardware measurement filters. Run `validate_hardware_cascade` for repeatable checks. All saved models use the course position reference.
+
+**The hardware port has not been built or run with QUARC.** With the retained gains and hardware rate estimator, offline steps settle in about 5.2 s, exceeding the 3 s timing target. This limitation and the outstanding encoder/polarity checks are documented; these files do not establish hardware readiness.
+
 ## Separate experiment copies
 
 The diagnostic models are under `simulink/experiments/` and have unique `_experiment` names:
@@ -103,6 +111,7 @@ All working models have R2021a exports. Validation uses the available MATLAB R20
 
 ```text
 course/                  Original supplied PDFs, initialization script and model
+real_hardware/           Unchanged professor QUARC models and setup scripts
 matlab/                  Model builders
 matlab/parameters/       Course constants and controller gains
 matlab/mechanics/        Mechanical equations and nonlinear inverse
