@@ -445,13 +445,25 @@ The [feedback-linearization experiment](../simulink/experiments/aero2_mechanical
 
 Its scopes show requested/recovered acceleration, angles, rates, rotor commands and acceleration error. [validate_feedback_linearization.m](../validation/validate_feedback_linearization.m) also substitutes computed rotor speeds into the original course equations at 180 representative states and acceleration commands.
 
-![Experiment: acceleration, angle response and cancellation error](figures/feedback_linearization_response.png)
+![Experiment: acceleration, angular velocity and angle response](figures/feedback_linearization_response.png)
 
 Read this figure by rows:
 
 - **Top:** requested and recovered accelerations overlap, confirming the cancellation.
-- **Middle:** the dotted curves are analytical double-integrator responses; the orange curves come from the nonlinear course mechanics. Yaw first decreases because its initial velocity is negative. The positive pulse reverses it, leaving +0.01 rad/s afterward. Pitch initially increases; the negative pulse reduces its velocity to zero, so it becomes flat near 0.216 rad.
-- **Bottom:** the acceleration error is around $10^{-17}$ rad/s². The spikes are floating-point roundoff, not sensor noise or physical oscillation.
+- **Middle — angular velocity:** yaw starts at -0.05 rad/s. The positive acceleration pulse brakes it, crosses zero near 0.533 s, and leaves +0.01 rad/s after 0.6 s. Pitch starts at +0.04 rad/s; its negative pulse brings it to zero at 0.6 s. These are body angular velocities, not propeller spin speeds.
+- **Bottom — position:** yaw decreases while its velocity is negative and increases after its velocity becomes positive. It is not being commanded back to its initial angle: it will pass that angle if the simulation continues. Pitch becomes flat because its final velocity is zero. The dotted curves are the analytical responses; the orange curves come from the nonlinear course mechanics.
+
+The angular-velocity prediction is obtained by integrating the acceleration pulse once:
+
+```math
+\dot q(t)=\dot q(0)+a_0\left[\max(t-0.2,0)-\max(t-0.6,0)\right].
+```
+
+Here $a_0=[0.15,-0.10]^T$ rad/s². After the pulse, the final rates are $[-0.05,0.04]^T+0.4[0.15,-0.10]^T=[0.01,0]^T$ rad/s. Zero acceleration then preserves these rates; it does not stop yaw motion or mean the motors are switched off.
+
+![Experiment: acceleration cancellation residuals](figures/feedback_linearization_residual.png)
+
+The separate residual figure shows acceleration errors around $10^{-17}$ rad/s². Its spikes are floating-point roundoff, not sensor noise or physical oscillation.
 
 | Check | Measured result |
 |---|---:|
