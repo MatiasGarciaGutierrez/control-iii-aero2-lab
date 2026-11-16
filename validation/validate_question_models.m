@@ -1,9 +1,10 @@
-function checks = validate_question_models
+function checks = validate_question_models(questions)
 %VALIDATE_QUESTION_MODELS Verify simple answers against their experiment copies.
+if nargin==0, questions=1:5; end
 project=setup_project;
-models={'aero2_motor_pi','aero2_motor_ip','aero2_mechanical_linearization','aero2_position_control'};
+models={'aero2_motor_pi','aero2_motor_ip','aero2_mechanical_linearization','aero2_position_control','aero2_cascade_control'};
 checks=table;
-for question=1:4
+for question=questions
     model=models{question};
     load_system(fullfile(project.simulink,[model '.slx']));
     cleanup=onCleanup(@() close_system(model,0));
@@ -30,10 +31,14 @@ for question=1:4
         sources={'Virtual acceleration a/1','Angles and rates/1', ...
             'Angles and rates/2','Mechanical inverse/1'};
         columns=[1:2 5:10];
-    else
+    elseif question==4
         sources={'Desired orientation/1','Angles and rates/1','Angles and rates/2', ...
             'Desired acceleration/1','Mechanical inverse/1','Position error/1'};
         columns=1:12;
+    else
+        sources={'Desired orientation/1','Measured angles/1','Measured rates/1', ...
+            'Desired acceleration/1','Mechanical inverse/1','Measured rotor speeds/1','IP motor control/1'};
+        columns=[1:12 15:16];
     end
     % Export the uninstrumented exercise diagram first.
     print(['-s' model],'-dpng','-r150', ...
@@ -63,10 +68,12 @@ for question=1:4
         data=output.motor_data;
     elseif question==3
         data=output.linearization_data;
-    else
+    elseif question==4
         data=output.position_data;
+    else
+        data=output.cascade_data;
     end
-    width=14; if question==4, width=16; end
+    width=14; if question==4, width=16; elseif question==5, width=24; end
     reference=asMatrix(data,width);
     error=max(abs(simpleData-reference(:,columns)),[],'all');
     assert(isequal(simple.equivalence_data.Time,data.Time),'Simulation time vectors differ.');
