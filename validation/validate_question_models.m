@@ -1,9 +1,9 @@
 function checks = validate_question_models
 %VALIDATE_QUESTION_MODELS Verify simple answers against their experiment copies.
 project=setup_project;
-models={'aero2_motor_pi','aero2_motor_ip','aero2_mechanical_linearization'};
+models={'aero2_motor_pi','aero2_motor_ip','aero2_mechanical_linearization','aero2_position_control'};
 checks=table;
-for question=1:3
+for question=1:4
     model=models{question};
     load_system(fullfile(project.simulink,[model '.slx']));
     cleanup=onCleanup(@() close_system(model,0));
@@ -26,10 +26,14 @@ for question=1:3
             assert(isempty(find_system(model,'SearchDepth',1,'Name','Main reference weight')), ...
                 'The simple IP model contains the PI/IP experiment selector.');
         end
-    else
+    elseif question==3
         sources={'Virtual acceleration a/1','Angles and rates/1', ...
             'Angles and rates/2','Mechanical inverse/1'};
         columns=[1:2 5:10];
+    else
+        sources={'Desired orientation/1','Angles and rates/1','Angles and rates/2', ...
+            'Desired acceleration/1','Mechanical inverse/1','Position error/1'};
+        columns=1:12;
     end
     % Export the uninstrumented exercise diagram first.
     print(['-s' model],'-dpng','-r150', ...
@@ -55,8 +59,15 @@ for question=1:3
         end
     end
     output=sim(input);
-    if question<3, data=output.motor_data; else, data=output.linearization_data; end
-    reference=asMatrix(data,14);
+    if question<3
+        data=output.motor_data;
+    elseif question==3
+        data=output.linearization_data;
+    else
+        data=output.position_data;
+    end
+    width=14; if question==4, width=16; end
+    reference=asMatrix(data,width);
     error=max(abs(simpleData-reference(:,columns)),[],'all');
     assert(isequal(simple.equivalence_data.Time,data.Time),'Simulation time vectors differ.');
     assert(error<1e-10,'Simple answer changed the controller or plant behavior.');
