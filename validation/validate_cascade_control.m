@@ -15,7 +15,9 @@ for k=1:6
     r=experiment(model,reference,zeros(6,1),p.step,0,p.stopTime); runs{k}=r;
     noisy=experiment(model,reference,zeros(6,1),p.step,1,p.stopTime); noisyRuns{k}=noisy;
     idealInput=Simulink.SimulationInput(idealModel);
-    idealInput=idealInput.setBlockParameter([idealModel '/Desired orientation'],'After',mat2str(commands(k,:)'));
+    idealInput=idealInput.setVariable('Reference',reference,'Workspace',idealModel);
+    idealInput=idealInput.setBlockParameter([idealModel '/Desired orientation'],'Interpolate','off');
+    idealInput=idealInput.setModelParameter('StopTime',num2str(p.stopTime));
     idealOutput=sim(idealInput); idealRuns{k}=readSignal(idealOutput.position_data,16);
     for axis=1:2
         target=commands(k,axis);
@@ -69,9 +71,9 @@ assert(max(abs(zero.data(:)))<1e-10,'Zero-reference equilibrium failed.');
 regulation=experiment(model,stepReference([0;0],p),[0.1;-0.1;0.05;-0.04;0;0],p.step,0,12);
 assert(max(abs(regulation.data(end,19:22)))<1e-4,'Cascade did not regulate the initial state.');
 % Recreate the exact angle references from the original initialization script.
-reference=courseReference(p.step);
-smooth=experiment(model,reference,zeros(6,1),p.step,0,60);
-smoothNoisy=experiment(model,reference,zeros(6,1),p.step,1,60);
+[~,~,reference]=aero2_course_reference;
+smooth=experiment(model,reference,zeros(6,1),p.step,0,60,true);
+smoothNoisy=experiment(model,reference,zeros(6,1),p.step,1,60,true);
 smoothMetrics=table;
 for mode=1:2
     list={smooth,smoothNoisy}; r=list{mode};
@@ -111,17 +113,11 @@ function reference=stepReference(command,p)
 reference=[0 0 0;p.stepTime-p.step 0 0;p.stepTime command';p.stopTime command'];
 end
 
-function reference=courseReference(step)
-t=(0:step:60)';
-sstep=@(t,t0,A,T) A*(1-(1+(t-t0)/T).*exp(-(t-t0)/T)).*(t>=t0);
-yaw=sstep(t,5,0.5,2.5)+sstep(t,25,-1,2.5)+sstep(t,40,0.5,2.5);
-pitch=sstep(t,2,0.3,2.5)+sstep(t,15,-0.5,2.5)+sstep(t,32,0.4,2.5) ...
-    +0.1*sin(2*pi*0.05*(t-45)).*sstep(t,45,1,2.5);
-reference=[t 2*yaw 2*pitch];
-end
-
-function r=experiment(model,reference,state,step,noise,stopTime)
+function r=experiment(model,reference,state,step,noise,stopTime,interpolate)
+if nargin<7, interpolate=false; end
+mode='off'; if interpolate, mode='on'; end
 input=Simulink.SimulationInput(model);
+input=input.setBlockParameter([model '/Desired orientation'],'Interpolate',mode);
 input=input.setVariable('Reference',reference,'Workspace',model);
 input=input.setVariable('PlantX0',state,'Workspace',model);
 input=input.setVariable('meas_on',noise,'Workspace',model);

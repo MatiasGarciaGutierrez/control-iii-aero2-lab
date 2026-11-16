@@ -55,9 +55,40 @@ Press **Run**. A Scope displays its connected signals against simulation time. D
 
 Body and rotor accelerations have the same units (rad/s²) but describe different physical motion. Actual acceleration is observed directly from the plant's existing derivative signals; no numerical differentiation is introduced. The extra plant outputs are passive monitors: the mechanical/motor equations, sensor settings, controller gains and references are preserved. In the full cascade, actual body acceleration can differ from the commanded acceleration because motor tracking takes time.
 
-The Scope audit checks all seven activity models and their exports in R2024b. Required inputs are connected, acceleration discrepancies stay below $3.1\times10^{-12}$ rad/s², and the Question 1–5 and optional simple/experiment pairs match exactly.
+The Scope audit checks all seven activity models and their exports in R2024b. Required inputs are connected, acceleration discrepancies stay below $10^{-10}$ rad/s², and the Question 1–5 and optional simple/experiment pairs match exactly.
 
-The simulation comparisons and recovery generators remain in the experiment copies. Scope additions do not make the simple step inputs identical to every experiment in this report. Later hardware-validation activities have no executable hardware model yet; they require professor approval and the actual device interface.
+The simulation comparisons and recovery generators remain in the experiment copies. Questions 4–5 and the optional controller default to the course trajectory. Validation explicitly selects the step, disturbance and recovery inputs used for the performance tables below. Later hardware-validation activities have no executable hardware model yet; they require professor approval and the actual device interface.
+
+### Default course reference for position control
+
+**Pressing Run in Question 4, Question 5 or the optional model now runs the supplied 60 s angle trajectory.** Their saved experiment copies use the same default trajectory. Questions 1–2 retain motor-speed inputs, and Question 3 retains its virtual-acceleration input.
+
+![Course yaw and pitch sources inside Desired orientation](figures/course_reference_source.png)
+
+Double-click **Desired orientation** in a simple position model. Its two **From Workspace** blocks read `U_v` for yaw and `U_h` for pitch, in that order. The time series are stored in the model workspace, so the saved model runs without an initialization callback. [aero2_course_reference.m](../matlab/parameters/aero2_course_reference.m) reproduces the course script exactly: `Ts=0.002` s, `tmax=60` s, `Tr=2.5` s, all original transitions and the slow sine, including `2*yaw_ref` and `2*pitch_ref`. Linear interpolation matches the supplied model's From Workspace behavior. Simulation and Scope duration are both 60 s.
+
+![Default course-reference tracking in all three position models](figures/course_reference_tracking.png)
+
+| Model, ideal measurements | Yaw tracking-error RMS | Pitch tracking-error RMS |
+|---|---:|---:|
+| Question 4: ideal motors | 0.09964 rad | 0.05981 rad |
+| Question 5: full motor cascade | 0.09941 rad | 0.05975 rad |
+| Optional position integral | 0.09956 rad | 0.05977 rad |
+
+These are RMS errors over the full 60 s trajectory. The small differences do not establish that one controller is better in general. All three show tracking lag with the existing position/rate feedback. The course's smoothing time `Tr` is a property of the desired trajectory; it is not the controller's settling time.
+
+The numerical step specifications are still tested separately. Validation overrides only the experiment reference and run duration for those cases; it does not change the saved course-reference defaults or add selectors to the simple diagrams.
+
+```matlab
+project = setup_project;
+open_system(fullfile(project.simulink,'aero2_cascade_control.slx'));
+open_system('aero2_cascade_control/Angle scope');
+% Press Run: the course trajectory starts automatically and runs for 60 s.
+validate_course_reference;
+export_course_reference_figures;
+```
+
+The reference check executes the original course initializer in an isolated function workspace and compares every generated sample, then verifies the delivered references and default trajectories. Original course files are not modified.
 
 ## Preparation — Check the supplied simulator
 
@@ -581,12 +612,12 @@ The **Position error** block forms $q_d-q$. **Position gain** multiplies it by `
 
 | Setting | Value |
 |---|---|
-| Desired orientation | `[0.2;0.1]` rad: yaw first, pitch second |
-| Step time | 0.2 s, from `[0;0]` |
-| Step sample time | 0, continuous |
+| Desired orientation | Course `U_v` yaw and `U_h` pitch time series |
+| Reference sampling / smoothing | 0.002 s / `Tr=2.5` s, as supplied |
+| Reference source | **Desired orientation** subsystem, two From Workspace blocks |
 | Initial angles and angular velocities | Zero |
 | Gains in the model workspace | `Kq=3.7816269`, `Dq=3.8892811` (stored at full precision) |
-| Solver / stop time | Forward Euler, 0.002 s / 8 s |
+| Solver / stop time | Forward Euler, 0.002 s / 60 s |
 | Measurements and motors | Ideal state measurements and perfect rotor-speed tracking |
 | Pitch simulation envelope | ±60°, enforced by the inverse |
 
@@ -674,13 +705,13 @@ The proportional term uses measured speed. The integral term uses speed error an
 
 | Setting | Value |
 |---|---|
-| Desired orientation Step | Yaw/pitch `[0;0]` → `[0.2;0.1]` rad at 0.2 s; sample time 0 |
+| Desired orientation | Exact course yaw/pitch trajectory from stored `U_v` / `U_h` |
 | Position gains | `Kq=3.7816269`, `Dq=3.8892811` |
 | Motor gains | `Kp=0.2163704`, `Ki=1.8416461`, `Kaw=20` |
 | Initial plant state and IP integral states | Zero |
 | Motor voltage | Generated by the IP loops; each channel limited to ±24 V |
 | Measurement effects | Model workspace `meas_on=0` for ideal sensors; `1` enables supplied noise and quantization |
-| Solver / stop time | Forward Euler, 0.002 s / 8 s |
+| Solver / stop time | Forward Euler, 0.002 s / 60 s |
 | Sensor-noise update period | Supplied 0.002 s; unchanged during solver refinement |
 | Pitch simulation envelope | ±60°, enforced by the nonlinear inverse |
 
@@ -739,7 +770,7 @@ Across all signed sensor tests, final true-error RMS stays below 0.000440 rad fo
 
 ### Supplied smooth reference
 
-The validation script reproduces the original initialization script's 60 s references, including its factor of two. This tests tracking; it does not establish step settling time. The controller still uses position and measured-velocity feedback, with no desired-velocity or acceleration feedforward.
+The saved simple and experiment models now use the original initialization script's 60 s references by default, including its factor of two. The validation script uses the same shared generator. This tests tracking; it does not establish step settling time. The controller still uses position and measured-velocity feedback, with no desired-velocity or acceleration feedforward.
 
 ![Supplied smooth trajectory and tracking errors](figures/cascade_smooth_tracking.png)
 
@@ -834,7 +865,7 @@ This preserves the original ideal 3 s step response from rest. The additional po
 
 ![Inside the position-integral controller](figures/position_integral_controller.png)
 
-The figures above are Simulink diagram exports. Open [aero2_position_integral.slx](../simulink/aero2_position_integral.slx). Double-click **Position integral control** to see the gains, integral contribution and anti-windup gate. The default reference is still yaw 0.2 rad and pitch 0.1 rad at 0.2 s, from rest. The motor IP gains, nominal ±24 V limits, 0.002 s solver step, ideal sensors and the body/motor motion Scopes are retained from Question 5. The two integral contributions are visible inside their respective controller subsystems.
+The figures above are Simulink diagram exports. Open [aero2_position_integral.slx](../simulink/aero2_position_integral.slx). Double-click **Position integral control** to see the gains, integral contribution and anti-windup gate. The default input is now the full 60 s course trajectory from rest; the nominal step comparisons below remain separate validation cases. The motor IP gains, nominal ±24 V limits, 0.002 s solver step, ideal sensors and the body/motor motion Scopes are retained from Question 5. The two integral contributions are visible inside their respective controller subsystems.
 
 The new outer anti-windup rule pauses **both** position integrators whenever either motor's raw voltage differs from its limited voltage. Otherwise, $\dot J=K_i^q(q_d-q)$. Both axes pause because rotor action is coupled. This conservative rule prevents accumulation during voltage saturation; it does not actively discharge stored integral action or account for every possible hardware constraint. The motor-loop back-calculation remains active as well.
 
@@ -858,7 +889,7 @@ The optional controller keeps settling near 3 s, with a very small overshoot. It
 
 ### Constant-disturbance comparison
 
-At 5 s, apply an unknown constant yaw torque of +0.010 N m and pitch torque of -0.008 N m. Hold the desired angles at `[0.2;0.1]` rad. Both controllers use the same disturbed plant. Measure the final errors over 18–20 s with ideal sensors.
+At 5 s, apply an unknown constant yaw torque of +0.010 N m and pitch torque of -0.008 N m. Hold the desired angles at `[0.2;0.1]` rad. Both controllers use the same disturbed plant, with a constant angle reference explicitly selected by validation. Measure the final errors over 18–20 s with ideal sensors.
 
 | Axis | PD mean position error | With integral action |
 |---|---:|---:|
@@ -929,6 +960,8 @@ Run the experiment checks and regenerate their figures with:
 validate_motor_pi;
 validate_motor_ip;
 validate_feedback_linearization;
+validate_course_reference;
+export_course_reference_figures;
 validate_position_control;
 validate_cascade_control;
 validate_activity_scopes;

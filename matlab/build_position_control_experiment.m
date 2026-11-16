@@ -35,6 +35,7 @@ signals={'Desired orientation/1','Angles and rates/1','Angles and rates/2', ...
     'Ideal-speed course mechanics/2','Acceleration residual/1'};
 for k=1:numel(signals), wire(model,signals{k},sprintf('Log signals/%d',k)); end
 wire(model,'Log signals/1','Recorded signals/1');
+configure_course_reference(model,true);
 save_system(model);
 Simulink.exportToVersion(model,fullfile(project.experiments,[model '_R2021a.slx']),'R2021a');
 end

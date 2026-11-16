@@ -29,7 +29,11 @@ test=defaults(p); test.integral=false;
 pd=runTest(model,test,p);
 baseline='aero2_cascade_control_experiment';
 load_system(fullfile(project.experiments,[baseline '.slx']));
-output=sim(baseline); reference=matrix(output.cascade_data,24);
+input=Simulink.SimulationInput(baseline);
+input=input.setVariable('Reference',test.reference,'Workspace',baseline);
+input=input.setBlockParameter([baseline '/Desired orientation'],'Interpolate','off');
+input=input.setModelParameter('StopTime',num2str(p.stopTime));
+output=sim(input); reference=matrix(output.cascade_data,24);
 pdDifference=max(abs(pd.data(:,1:24)-reference),[],'all');
 assert(pdDifference<1e-7,'Optional experiment changed the PD baseline dynamics.');
 assert(max(abs(pd.data(:,19:22)-reference(:,19:22)),[],'all')<1e-10, ...
@@ -147,6 +151,7 @@ end
 
 function r=runTest(model,t,p)
 input=Simulink.SimulationInput(model);
+input=input.setBlockParameter([model '/Desired orientation'],'Interpolate','off');
 variables={'Reference',t.reference;'Disturbance',t.torque;'VoltageLimits',t.authority; ...
     'meas_on',t.noise;'OuterAW',t.outerAW};
 if t.integral

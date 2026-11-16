@@ -57,9 +57,12 @@ end
 
 function r=experiment(model,command,state,step)
 input=Simulink.SimulationInput(model);
-input=input.setBlockParameter([model '/Desired orientation'],'After',mat2str(command));
+p=position_control_parameters;
+reference=[0 0 0;p.stepTime-p.step 0 0;p.stepTime command';p.stopTime command'];
+input=input.setVariable('Reference',reference,'Workspace',model);
+input=input.setBlockParameter([model '/Desired orientation'],'Interpolate','off');
 input=input.setVariable('X0',state,'Workspace',model);
-input=input.setModelParameter('FixedStep',num2str(step));
+input=input.setModelParameter('FixedStep',num2str(step),'StopTime',num2str(p.stopTime));
 output=sim(input); r.time=output.position_data.Time;
 if output.position_data.IsTimeFirst
     r.data=reshape(output.position_data.Data,numel(r.time),16);

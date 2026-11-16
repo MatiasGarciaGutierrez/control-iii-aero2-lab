@@ -114,6 +114,7 @@ note=Simulink.Annotation(model,sprintf([ ...
     'Double-click IP motor control to see the two identical vectorized speed loops.']));
 note.Position=[35 20 1700 120];
 configure_activity_scopes(model,5);
+configure_course_reference(model);
 save_system(model);
 Simulink.exportToVersion(model,fullfile(project.simulink,[model '_R2021a.slx']),'R2021a');
 end

@@ -19,6 +19,7 @@ workspace=get_param(model,'ModelWorkspace');
 assignin(workspace,'X0',p.initialState);
 assignin(workspace,'Kq',p.kp); assignin(workspace,'Dq',p.kd);
 set_param(model,'StopTime',num2str(p.stopTime),'FixedStep',num2str(p.step));
+% Connect a placeholder; configure_course_reference installs U_v/U_h before saving.
 add_block('simulink/Sources/Step',[model '/Desired orientation'], ...
     'Time',num2str(p.stepTime),'Before','[0;0]','After',mat2str(p.reference), ...
     'SampleTime','0','Position',[35 210 105 260]);
@@ -58,6 +59,7 @@ note=Simulink.Annotation(model,sprintf([ ...
     'q_d=[0.2;0.1] rad at 0.2 s; x(0)=0; inherited +/-60 deg pitch simulation envelope'],p.kp,p.kd));
 note.Position=[35 25 1400 120];
 configure_activity_scopes(model,4);
+configure_course_reference(model);
 save_system(model);
 Simulink.exportToVersion(model,fullfile(project.simulink,[model '_R2021a.slx']),'R2021a');
 end

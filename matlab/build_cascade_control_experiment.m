@@ -5,19 +5,9 @@ source='aero2_cascade_control'; model=[source '_experiment'];
 load_system(fullfile(project.simulink,[source '.slx']));
 if bdIsLoaded(model), close_system(model,0); end
 save_system(source,fullfile(project.experiments,[model '.slx']));
-% Replace only the test source so arbitrary trajectories remain out of the answer.
-reference=[0 0 0;p.stepTime-p.step 0 0;p.stepTime p.reference';p.stopTime p.reference'];
-workspace=get_param(model,'ModelWorkspace'); assignin(workspace,'Reference',reference);
+workspace=get_param(model,'ModelWorkspace');
 assignin(workspace,'PlantX0',p.initialState);
 set_param([model '/Course nonlinear plant/x'],'InitialCondition','PlantX0');
-position=get_param([model '/Desired orientation'],'Position');
-delete_line(model,'Desired orientation/1','Position error/1');
-delete_line(model,'Desired orientation/1','Angle scope/1');
-delete_block([model '/Desired orientation']);
-add_block('simulink/Sources/From Workspace',[model '/Desired orientation'], ...
-    'VariableName','Reference','Interpolate','off','OutputAfterFinalValue','Holding final value','Position',position);
-wire(model,'Desired orientation/1','Position error/1');
-wire(model,'Desired orientation/1','Angle scope/1');
 controller=[model '/IP motor control'];
 for k=1:2
     names={'Raw voltage','Integral state'};
@@ -42,6 +32,7 @@ sources={'Desired orientation/1','Measured angles/1','Measured rates/1', ...
     'IP motor control/2','IP motor control/1','IP motor control/3','Course nonlinear plant/10'};
 for k=1:numel(sources), wire(model,sources{k},sprintf('Log signals/%d',k)); end
 wire(model,'Log signals/1','Recorded signals/1');
+configure_course_reference(model,true);
 save_system(model);
 Simulink.exportToVersion(model,fullfile(project.experiments,[model '_R2021a.slx']),'R2021a');
 end
