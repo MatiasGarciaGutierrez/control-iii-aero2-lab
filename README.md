@@ -9,6 +9,7 @@ Part II of the Automatic Control III laboratory. Develop and validate the contro
 | 1 — PI motor-speed control | `simulink/aero2_motor_pi.slx` | Speed, voltage |
 | 2 — IP with anti-windup | `simulink/aero2_motor_ip.slx` | Speed, voltage |
 | 3 — Mechanical feedback linearization | `simulink/aero2_mechanical_linearization.slx` | Yaw/pitch angles |
+| 4 — Yaw/pitch position control | `simulink/aero2_position_control.slx` | Desired/measured angles |
 
 The question models contain essential control/plant connections, a basic reference and basic scopes. The IP answer shows `v_raw = I - Kp*omega` and its anti-windup feedback directly. It has no recovery-step generator, PI/IP selector or diagnostic logging bundle.
 
@@ -21,7 +22,9 @@ open_system('aero2_motor_ip/Speed scope');
 open_system('aero2_motor_ip/Voltage scope');
 ```
 
-Press Run. The motor examples command main +100 and tail -100 rad/s at 0.1 s. Question 3 starts at zero state and applies a vector acceleration Step `[0.15;-0.1]` rad/s² at 0.2 s, assuming ideal rotor-speed tracking. It does not yet regulate position; the 3 s position controller is Question 4.
+Press Run. The motor examples command main +100 and tail -100 rad/s at 0.1 s. Question 3 starts at zero state and applies a vector acceleration Step `[0.15;-0.1]` rad/s² at 0.2 s, assuming ideal rotor-speed tracking. Question 3 does not regulate position. Question 4 uses the inverse to track desired yaw/pitch angles, still assuming perfect motor tracking.
+
+For Question 4, open `aero2_position_control.slx` and its `Angle scope`. Its reference steps to yaw 0.2 rad and pitch 0.1 rad at 0.2 s. The measured ideal settling time is 2.996 s for a 3 s target. The complete IP-motor cascade is Question 5 and remains to be validated.
 
 The [report](docs/report.md) shows the simple diagrams first, then derives each controller and explains the separate experiment settings and results.
 
@@ -32,6 +35,7 @@ The diagnostic models are under `simulink/experiments/` and have unique `_experi
 - `aero2_motor_pi_experiment.slx`: signed motor tests and detailed logging.
 - `aero2_motor_ip_experiment.slx`: PI/IP selection, optional recovery steps, raw/applied voltage and integral-state diagnostics.
 - `aero2_mechanical_linearization_experiment.slx`: acceleration pulses, nonzero initial state, analytical comparison and residual diagnostics.
+- `aero2_position_control_experiment.slx`: signed single-axis/simultaneous angle tests and position-loop diagnostics.
 
 Open them by full path; `setup_project` returns `project.experiments` without adding that directory to the MATLAB path. For example:
 
@@ -45,10 +49,12 @@ The existing validation commands target these experiment copies:
 validate_motor_pi;
 validate_motor_ip;
 validate_feedback_linearization;
+validate_position_control;
 validate_question_models;    % Check simple/experiment equivalence; export simple diagrams
 export_motor_pi_figures;
 export_motor_ip_figures;
 export_feedback_linearization_figures;
+export_position_control_figures;
 ```
 
 Generated raw recordings and numerical tables go under ignored `results/`. Selected evidence is committed under `docs/figures/`. The simple models have no To Workspace logging blocks; the equivalence check temporarily instruments them in memory and discards those changes.
@@ -60,9 +66,11 @@ project = setup_project;
 build_motor_pi;
 build_motor_ip;
 build_feedback_linearization;
+build_position_control;
+build_position_control_experiment;
 ```
 
-Each command recreates its experiment copy and then the simple question answer. The separate `build_*_experiment` functions can rebuild only the diagnostic model. Lasting diagram edits belong in the builders, because rebuilding overwrites generated models.
+The Question 1–3 builders recreate their experiment copy and then the simple answer. For Question 4, build the simple position model first and its experiment copy second, as shown above. The separate `build_*_experiment` functions can rebuild only the diagnostic model. Lasting diagram edits belong in the builders, because rebuilding overwrites generated models.
 
 `simulink/aero2_simulator.slx` remains the open-loop preparation model. Use `build_simulator`, `validate_simulator` and `export_simulator_figures` for that baseline.
 

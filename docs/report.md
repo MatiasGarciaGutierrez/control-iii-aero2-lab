@@ -1,6 +1,6 @@
 # AERO 2 laboratory report — Part II
 
-This report follows [Part II of the laboratory guide, pages 4–6](../course/Automatic_Control_III_Computer_Room_II.pdf). Questions 1–3 are implemented. The pitch/yaw position controller with a 3 s settling-time target is Question 4 and has not been implemented yet.
+This report follows [Part II of the laboratory guide, pages 4–6](../course/Automatic_Control_III_Computer_Room_II.pdf). Questions 1–4 are implemented, including yaw/pitch position control under ideal motor-speed tracking. The complete cascade with the actual IP motor loops is Question 5 and remains to be validated.
 
 ## The physical system and signals
 
@@ -26,6 +26,7 @@ Start with the **simple answer models** in `simulink/`. They contain the essenti
 | 1 — PI motor control | [aero2_motor_pi.slx](../simulink/aero2_motor_pi.slx) |
 | 2 — IP with anti-windup | [aero2_motor_ip.slx](../simulink/aero2_motor_ip.slx) |
 | 3 — Feedback linearization | [aero2_mechanical_linearization.slx](../simulink/aero2_mechanical_linearization.slx) |
+| 4 — Yaw/pitch position control | [aero2_position_control.slx](../simulink/aero2_position_control.slx) |
 
 Separate copies in `simulink/experiments/` contain recovery-step generators, comparison switches and detailed logging. Those blocks support validation; they are not extra parts of the required controller. Experiment filenames add `_experiment` before `.slx`.
 
@@ -399,7 +400,7 @@ The physical plant still receives rotor speeds. The inverse makes the combined s
 
 The next controller can ask for a body acceleration without directly handling gravity and rotor coupling. The inverse handles those effects when it calculates the propeller speeds.
 
-In Question 4, we will choose an acceleration of the form
+Question 4 below chooses an acceleration of the form
 
 ```math
 a=K_p^q(q_d-q)-K_d^q\dot q.
@@ -411,7 +412,7 @@ The first term accelerates toward the desired orientation; the second brakes acc
 \ddot q+K_d^q\dot q+K_p^q q=K_p^q q_d.
 ```
 
-This is a linear second-order position-control problem. Its gains can be selected for the 3 s settling-time target. This explains the purpose of Question 3; the position controller and its gains are not implemented yet. These future position gains are separate from the motor PI/IP gains.
+This is a linear second-order position-control problem. Its gains are selected for the 3 s settling-time target in Question 4 below. These position gains are separate from the motor PI/IP gains.
 
 ### Validity range of the control law
 
@@ -463,6 +464,114 @@ Read this figure by rows:
 
 **Conclusion:** the compensated ideal mechanics behaves as two double integrators. No equilibrium approximation was needed. Choosing $a$ to regulate position and meet the 3 s target is Question 4.
 
+## Question 4 — AERO 2 yaw/pitch position control
+
+### What the guide asks
+
+Using measured angles $q$ and angular velocities $\dot q$, design a linear controller that drives the AERO 2 to a desired orientation $q_d$ with approximately **3 s settling time**.
+
+We retain Question 3's ideal motor-tracking assumption. This question closes the position loop around the compensated mechanics; it does not yet include the actual motor response or voltage limits.
+
+### Control law and gain selection
+
+Question 3 gives $\ddot q=a$. We now calculate $a$ from the position error and angular velocity:
+
+```math
+a=K_p^q(q_d-q)-K_d^q\dot q.
+```
+
+The proportional term accelerates toward the target. The rate term provides braking. The nonlinear inverse then converts this desired body acceleration into the required main/tail rotor speeds.
+
+For a constant target, the error $e=q_d-q$ obeys
+
+```math
+\ddot e+K_d^q\dot e+K_p^q e=0.
+```
+
+Use identical, independent critically damped dynamics for yaw and pitch. Matching the characteristic polynomial to $(s+\lambda)^2$ gives
+
+```math
+K_p^q=\lambda^2 I_2,\qquad K_d^q=2\lambda I_2.
+```
+
+For a step from rest, the normalized error is $(1+\lambda t)e^{-\lambda t}$. Its exact 2% settling condition is
+
+```math
+(1+3\lambda)e^{-3\lambda}=0.02.
+```
+
+Solving it gives $\lambda=1.9446406$ s⁻¹, so the scalar gains applied to each axis are
+
+```math
+K_q=3.7816269,\qquad D_q=3.8892811.
+```
+
+The familiar $4/\lambda$ rule is only an estimate. Here we use the exact critically damped step response to target 3 s directly. The calculation is in [position_control_parameters.m](../matlab/parameters/position_control_parameters.m). There is no reference differentiation or outer-loop integral action.
+
+### Simple implementation
+
+![Question 4: simple AERO 2 position controller](figures/question_4_diagram.png)
+
+Open [aero2_position_control.slx](../simulink/aero2_position_control.slx). Its signal chain is:
+
+```text
+Desired yaw/pitch → position/rate feedback → desired acceleration a
+                 → nonlinear inverse → rotor speeds → ideal-speed mechanics
+```
+
+The **Position error** block forms $q_d-q$. **Position gain** multiplies it by `Kq`; **Rate feedback gain** multiplies $\dot q$ by `Dq`. **Desired acceleration** subtracts the rate contribution. The inverse, mechanical state and angle/rate feedback are inherited from Question 3.
+
+| Setting | Value |
+|---|---|
+| Desired orientation | `[0.2;0.1]` rad: yaw first, pitch second |
+| Step time | 0.2 s, from `[0;0]` |
+| Step sample time | 0, continuous |
+| Initial angles and angular velocities | Zero |
+| Gains in the model workspace | `Kq=3.7816269`, `Dq=3.8892811` (stored at full precision) |
+| Solver / stop time | Forward Euler, 0.002 s / 8 s |
+| Measurements and motors | Ideal state measurements and perfect rotor-speed tracking |
+| Pitch simulation envelope | ±60°, enforced by the inverse |
+
+The **Angle scope** receives desired yaw/pitch on its first vector input and measured yaw/pitch on its second. There are no experiment selectors or logging bundles in this simple answer.
+
+### Separate experiments and measured results
+
+The [position-control experiment](../simulink/experiments/aero2_position_control_experiment.slx) adds error, rate, acceleration, rotor-command and residual scopes. [validate_position_control.m](../validation/validate_position_control.m) tests yaw-only ±0.1 rad, pitch-only ±0.1 rad, and simultaneous commands `[0.2;0.1]` and `[-0.2;-0.1]` rad.
+
+![Single-axis and simultaneous position steps with ideal rotor tracking](figures/position_control_steps.png)
+
+The dotted reference is compared with the simulated angle. Single-axis tests also show that the uncommanded axis stays at zero. The vertical line is **3 s after the command**, at absolute simulation time 3.2 s; the settling-time measurement starts at the 0.2 s step.
+
+| Metric | Result across the signed step tests |
+|---|---:|
+| 2% settling time | **2.996 s** |
+| Rise time, 10–90% | 1.724 s |
+| Overshoot | 0% |
+| Largest absolute final position error at 8 s | $8.15\times10^{-7}$ rad |
+| Largest requested main/tail rotor speed | 178.56 / 298.00 rad/s |
+| Maximum uncommanded-axis motion in the single-axis tests | $2.05\times10^{-19}$ rad |
+| Settling time with a 0.001 s integration step | **2.998 s** |
+
+![Simultaneous-command errors, angular velocities, virtual accelerations and rotor commands](figures/position_control_signals.png)
+
+The tests also compare the trajectories with the analytical critically damped response, check zero-reference equilibrium, and verify convergence from nonzero initial angles and rates. A deliberately excessive pitch reference confirms that the simulation stops on leaving the envelope. All recorded signals remain finite in the accepted runs.
+
+**Conclusion:** the ideal yaw/pitch position controller meets the 3 s settling target. It controls orientation rather than rotor speed. The requested rotor speeds can change instantly in this ideal simulation; this is not possible with finite-voltage motors. Question 5 must replace that assumption with the IP loops and measure the resulting performance.
+
+### Reproduce Question 4
+
+```matlab
+project = setup_project;
+build_position_control;
+build_position_control_experiment;
+metrics = validate_position_control;
+export_position_control_figures;
+open_system(fullfile(project.simulink,'aero2_position_control.slx'));
+open_system('aero2_position_control/Angle scope');
+```
+
+Press **Run** to view the simple model. Rebuilding is optional for the saved models. `build_position_control` creates the simple answer; `build_position_control_experiment` makes the diagnostic copy. Only that copy records `out.position_data`, with paired columns for references (1–2), angles (3–4), rates (5–6), virtual acceleration (7–8), main/tail speeds (9–10), position errors (11–12), recovered acceleration (13–14) and acceleration residuals (15–16).
+
 ## Rebuild and repeat the checks
 
 Saved models can be opened without rebuilding. To regenerate both the simple answers and their experiment copies:
@@ -472,6 +581,8 @@ project = setup_project;
 build_motor_pi;
 build_motor_ip;
 build_feedback_linearization;
+build_position_control;
+build_position_control_experiment;
 ```
 
 Builders overwrite generated models. Put lasting diagram changes in the builder code.
@@ -482,13 +593,15 @@ Run the experiment checks and regenerate their figures with:
 validate_motor_pi;
 validate_motor_ip;
 validate_feedback_linearization;
+validate_position_control;
 validate_question_models;
 export_motor_pi_figures;
 export_motor_ip_figures;
 export_feedback_linearization_figures;
+export_position_control_figures;
 ```
 
-`validate_question_models` confirms that simple and experiment copies give the same dynamics under matching inputs and initial conditions. The maximum recorded difference is **0** for all three questions. For Question 3 it matches the experiment input and initial state to the simple model before comparing them.
+`validate_question_models` confirms that simple and experiment copies give the same dynamics under matching inputs and initial conditions. The maximum recorded difference is **0** for Questions 1–4. For Question 3 it matches the experiment input and initial state to the simple model before comparing them.
 
 To open a detailed experiment, use its full path:
 
@@ -496,7 +609,7 @@ To open a detailed experiment, use its full path:
 open_system(fullfile(project.experiments,'aero2_motor_ip_experiment.slx'));
 ```
 
-Only the experiment copies save detailed data: motor experiments return `out.motor_data`, and the linearization experiment returns `out.linearization_data` when run with `out = sim(model)`. Validation saves raw recordings and numerical tables under ignored `results/`. The simple answer models have no saved diagnostic logging blocks.
+Only the experiment copies save detailed data: motor experiments return `out.motor_data`, the linearization experiment returns `out.linearization_data`, and the position experiment returns `out.position_data` when run with `out = sim(model)`. Validation saves raw recordings and numerical tables under ignored `results/`. The simple answer models have no saved diagnostic logging blocks.
 
 ## How to interpret the evidence
 
