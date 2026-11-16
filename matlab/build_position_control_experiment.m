@@ -6,13 +6,6 @@ if ~isfile(fullfile(project.simulink,[source '.slx'])), build_position_control; 
 if bdIsLoaded(model), close_system(model,0); end
 load_system(fullfile(project.simulink,[source '.slx']));
 save_system(source,fullfile(project.experiments,[model '.slx']));
-% Expose acceleration only in the diagnostic copy; preserve the plant equations.
-root=sfroot;
-plant=root.find('-isa','Stateflow.EMChart','Path',[model '/Ideal-speed course mechanics']);
-plant.Script=strrep(plant.Script,'function dx = ideal_mechanics', ...
-    'function [dx, acceleration] = ideal_mechanics');
-plant.Script=strrep(plant.Script,'dx = fullDerivative(1:4);', ...
-    sprintf('dx = fullDerivative(1:4);\nacceleration = fullDerivative(3:4);'));
 add_block('simulink/Math Operations/Sum',[model '/Acceleration residual'], ...
     'Inputs','+-','Position',[1340 600 1370 645]);
 wire(model,'Desired acceleration/1','Acceleration residual/1');
@@ -22,17 +15,14 @@ units={'Position error [rad]','Angular velocity [rad/s]','Acceleration [rad/s^2]
     'Rotor speed [rad/s]','Acceleration residual [rad/s^2]'};
 for k=1:5
     y=340+120*(k-1);
-    add_block('simulink/Sinks/Scope',[model '/' scopes{k}], ...
-        'NumInputPorts',num2str(1+(k==3)),'Position',[1510 y 1590 y+65]);
+    if getSimulinkBlockHandle([model '/' scopes{k}])==-1
+        add_block('simulink/Sinks/Scope',[model '/' scopes{k}], ...
+            'NumInputPorts',num2str(1+(k==3)),'Position',[1510 y 1590 y+65]);
+    end
     config=get_param([model '/' scopes{k}],'ScopeConfiguration');
     config.TimeSpan=num2str(p.stopTime); config.YLabel=units{k};
     config.ShowLegend=true; config.ShowGrid=true;
 end
-wire(model,'Position error/1','Error scope/1');
-wire(model,'Angles and rates/2','Rate scope/1');
-wire(model,'Desired acceleration/1','Acceleration scope/1');
-wire(model,'Ideal-speed course mechanics/2','Acceleration scope/2');
-wire(model,'Mechanical inverse/1','Rotor command scope/1');
 wire(model,'Acceleration residual/1','Residual scope/1');
 add_block('simulink/Signal Routing/Mux',[model '/Log signals'], ...
     'Inputs','8','Position',[1740 220 1745 850]);

@@ -114,6 +114,7 @@ else
     end
     title='Question 3: feedback linearization, ideal rotor tracking; a is acceleration';
 end
+configure_activity_scopes(model,question);
 note=Simulink.Annotation(model,title); note.Position=[40 30 1100 80];
 set_param(model,'SignalLogging','off');
 save_system(model);

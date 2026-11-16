@@ -4,14 +4,17 @@ Part II of the Automatic Control III laboratory. Develop and validate the contro
 
 ## Start with the simple question models
 
-| Question | Model to study | Basic scopes |
+| Activity | File to open in Simulink | Available views |
 |---|---|---|
-| 1 — PI motor-speed control | `simulink/aero2_motor_pi.slx` | Speed, voltage |
-| 2 — IP with anti-windup | `simulink/aero2_motor_ip.slx` | Speed, voltage |
-| 3 — Mechanical feedback linearization | `simulink/aero2_mechanical_linearization.slx` | Angles, body velocity, commanded/actual acceleration |
-| 4 — Yaw/pitch position control | `simulink/aero2_position_control.slx` | Desired/measured angles |
-| 5 — Complete cascade | `simulink/aero2_cascade_control.slx` | Angles, rotor speeds, applied voltage |
-| Optional — Position integral action | `simulink/aero2_position_integral.slx` | Angles, rotor speeds, applied voltage |
+| Preparation | [aero2_simulator.slx](simulink/aero2_simulator.slx) | Voltage, rotor speed/acceleration, body angle/rate/acceleration |
+| 1 — PI motor-speed control | [aero2_motor_pi.slx](simulink/aero2_motor_pi.slx) | Speed, speed error, motor acceleration, voltage |
+| 2 — IP with anti-windup | [aero2_motor_ip.slx](simulink/aero2_motor_ip.slx) | Speed, error, motor acceleration, applied/raw voltage, motor integral |
+| 3 — Feedback linearization | [aero2_mechanical_linearization.slx](simulink/aero2_mechanical_linearization.slx) | Body angle, rate, commanded/actual acceleration |
+| 4 — Ideal position control | [aero2_position_control.slx](simulink/aero2_position_control.slx) | Body angle, rate, commanded/actual acceleration, position error, rotor commands |
+| 5 — Complete cascade | [aero2_cascade_control.slx](simulink/aero2_cascade_control.slx) | Body motion, position error, rotor speed/acceleration, voltage and motor integral |
+| Optional — Position integral action | [aero2_position_integral.slx](simulink/aero2_position_integral.slx) | Body motion, rotor speed/acceleration, voltage, motor and position integrals |
+
+Open the file in the table, press **Run**, then double-click a Scope. Use the files directly under `simulink/` for the activity answers. Files under `simulink/experiments/` are the separate diagnostic tests. On laboratory MATLAB R2021a, open the matching `_R2021a.slx` export (for example, `aero2_motor_pi_R2021a.slx`).
 
 The question models contain essential control/plant connections, a basic reference and basic scopes. The IP answer shows `v_raw = I - Kp*omega` and its anti-windup feedback directly. It has no recovery-step generator, PI/IP selector or diagnostic logging bundle.
 
@@ -26,7 +29,7 @@ open_system('aero2_motor_ip/Voltage scope');
 
 Press Run. The motor examples command main +100 and tail -100 rad/s at 0.1 s. Question 3 starts at zero state and applies a vector acceleration Step `[0.15;-0.1]` rad/s² at 0.2 s, assuming ideal rotor-speed tracking. Question 3 does not regulate position. Its `Angle scope` shows yaw/pitch angles, `Rate scope` shows body angular velocities, and `Acceleration scope` compares commanded and actual body angular accelerations. The report's pulse experiment uses different initial conditions and a pulse instead of the simple model's step. Question 4 uses the inverse to track desired yaw/pitch angles, still assuming perfect motor tracking.
 
-For Question 4, open `aero2_position_control.slx` and its `Angle scope`. Its reference steps to yaw 0.2 rad and pitch 0.1 rad at 0.2 s. The measured ideal settling time is 2.996 s for a 3 s target. Question 5 connects the IP loops to the supplied plant. Open `aero2_cascade_control.slx` and its `Angle scope`, `Rotor speed scope` and `Voltage scope`. Its measured settling is 3.204–3.210 s, with no nominal overshoot or voltage saturation. This meets the working ±20% tolerance around 3 s.
+For Question 4, open `aero2_position_control.slx` and its `Angle scope`, `Rate scope` and `Acceleration scope`. Its reference steps to yaw 0.2 rad and pitch 0.1 rad at 0.2 s. The measured ideal settling time is 2.996 s for a 3 s target. Question 5 connects the IP loops to the supplied plant. Open `aero2_cascade_control.slx` and its `Angle scope`, `Rotor speed scope` and `Voltage scope`. Its measured settling is 3.204–3.210 s, with no nominal overshoot or voltage saturation. This meets the working ±20% tolerance around 3 s.
 
 The optional model adds position integral action and outer anti-windup without replacing Question 5. Nominal settling is 3.042–3.050 s. The separate experiment compares rejection of constant external torques and recovery after temporary voltage-authority loss. See the optional section in the report for the gain derivation and tradeoffs.
 
@@ -57,6 +60,7 @@ validate_motor_ip;
 validate_feedback_linearization;
 validate_position_control;
 validate_cascade_control;
+validate_activity_scopes;    % Audit Scope connections, actual accelerations and exports
 validate_question_models;    % Check simple/experiment equivalence; export simple diagrams
 export_motor_pi_figures;
 export_motor_ip_figures;
@@ -118,4 +122,4 @@ The five files under `course/` remain byte-identical to the `course-baseline` ta
 3. Open a GitHub PR targeting `master`, assigned to `MatiasGarciaGutierrez`. Independent review is optional for this solo project.
 4. Merge only when requested, using squash, then remove the source branch.
 
-Fetch and recheck target freshness before opening or merging a PR. Rebase only short-lived branches when needed and publish rebases with `--force-with-lease`. Never rebase or force-push `master`. The current private GitHub plan does not enforce server-side branch protection; the existing local pre-push hook is checkout-specific and is not copied by cloning.
+Fetch and recheck target freshness before opening or merging a PR. Rebase only short-lived branches when needed and publish rebases with `--force-with-lease`. Never rebase or force-push `master`. Check current branch protection in GitHub settings; the existing local pre-push hook is checkout-specific and is not copied by cloning.

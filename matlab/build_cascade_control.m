@@ -11,7 +11,7 @@ while ~isempty(lines)
     delete_line(lines(1));
     lines=find_system(model,'FindAll','on','SearchDepth',1,'Type','line');
 end
-for name={'Ideal-speed course mechanics','Mechanical state','Angles and rates'}
+for name={'Ideal-speed course mechanics','Mechanical state','Angles and rates','Rotor command scope'}
     delete_block([model '/' name{1}]);
 end
 notes=find_system(model,'FindAll','on','Type','annotation');
@@ -113,6 +113,7 @@ note=Simulink.Annotation(model,sprintf([ ...
     'IP motor control applies +/-24 V and back-calculation anti-windup. Euler step 0.002 s.\n' ...
     'Double-click IP motor control to see the two identical vectorized speed loops.']));
 note.Position=[35 20 1700 120];
+configure_activity_scopes(model,5);
 save_system(model);
 Simulink.exportToVersion(model,fullfile(project.simulink,[model '_R2021a.slx']),'R2021a');
 end
