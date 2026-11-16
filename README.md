@@ -29,7 +29,9 @@ open_system('aero2_motor_ip/Voltage scope');
 
 Press Run. The motor examples command main +100 and tail -100 rad/s at 0.1 s. Question 3 starts at zero state and applies a vector acceleration Step `[0.15;-0.1]` rad/s² at 0.2 s, assuming ideal rotor-speed tracking. Question 3 does not regulate position. Its `Angle scope` shows yaw/pitch angles, `Rate scope` shows body angular velocities, and `Acceleration scope` compares commanded and actual body angular accelerations. The report's pulse experiment uses different initial conditions and a pulse instead of the simple model's step. Question 4 uses the inverse to track desired yaw/pitch angles, still assuming perfect motor tracking.
 
-For Question 4, open `aero2_position_control.slx` and its `Angle scope`, `Rate scope` and `Acceleration scope`. Its reference steps to yaw 0.2 rad and pitch 0.1 rad at 0.2 s. The measured ideal settling time is 2.996 s for a 3 s target. Question 5 connects the IP loops to the supplied plant. Open `aero2_cascade_control.slx` and its `Angle scope`, `Rotor speed scope` and `Voltage scope`. Its measured settling is 3.204–3.210 s, with no nominal overshoot or voltage saturation. This meets the working ±20% tolerance around 3 s.
+**Questions 4–5 and the optional controller now use the course reference by default.** Press Run for the complete 60 s yaw/pitch trajectory. Double-click **Desired orientation** to see the two From Workspace sources: `U_v` (yaw) and `U_h` (pitch). The exact course time series, including the factor of two, are stored in each model workspace; no initialization script is needed before running a saved model. All Scopes display 60 s.
+
+The position experiment copies also default to the course trajectory. Validation scripts explicitly select the separate step, disturbance and recovery tests. Their measured step settling times remain 2.996 s for Question 4 and 3.204–3.210 s for Question 5. Course-trajectory plots show tracking performance, not step settling time.
 
 The optional model adds position integral action and outer anti-windup without replacing Question 5. Nominal settling is 3.042–3.050 s. The separate experiment compares rejection of constant external torques and recovery after temporary voltage-authority loss. See the optional section in the report for the gain derivation and tradeoffs.
 
@@ -58,6 +60,8 @@ The existing validation commands target these experiment copies:
 validate_motor_pi;
 validate_motor_ip;
 validate_feedback_linearization;
+validate_course_reference;  % Verify the exact course inputs and all three default trajectories
+export_course_reference_figures;
 validate_position_control;
 validate_cascade_control;
 validate_activity_scopes;    % Audit Scope connections, actual accelerations and exports

@@ -101,6 +101,7 @@ note=Simulink.Annotation(model,sprintf([ ...
     'Default yaw/pitch [0.2;0.1] rad at 0.2 s; zero initial state; ideal sensors; step 0.002 s']));
 note.Position=[35 20 1750 120];
 configure_activity_scopes(model,6);
+configure_course_reference(model);
 save_system(model);
 Simulink.exportToVersion(model,fullfile(project.simulink,[model '_R2021a.slx']),'R2021a');
 end

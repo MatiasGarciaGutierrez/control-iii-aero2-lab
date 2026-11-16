@@ -11,14 +11,6 @@ assignin(w,'Reference',reference); assignin(w,'Disturbance',[0 0 0;p.stopTime 0 
 assignin(w,'OuterAW',true); assignin(w,'VoltageLimits',[0 24;p.stopTime 24]);
 assignin(w,'PlantX0',zeros(6,1));
 set_param([model '/Course nonlinear plant/x'],'InitialCondition','PlantX0');
-delete_line(model,'Desired orientation/1','Position integral control/1');
-delete_line(model,'Desired orientation/1','Angle scope/1');
-position=get_param([model '/Desired orientation'],'Position');
-delete_block([model '/Desired orientation']);
-add_block('simulink/Sources/From Workspace',[model '/Desired orientation'], ...
-    'VariableName','Reference','Interpolate','off','OutputAfterFinalValue','Holding final value','Position',position);
-wire(model,'Desired orientation/1','Position integral control/1');
-wire(model,'Desired orientation/1','Angle scope/1');
 % Test-only external torque enters the acceleration equation after cancellation.
 plant=[model '/Course nonlinear plant'];
 add_block('simulink/Sources/In1',[plant '/Disturbance torque'],'Port','3', ...
@@ -83,6 +75,7 @@ sources={'Desired orientation/1','Measured angles/1','Measured rates/1', ...
     'Position integral control/2','Disturbance torque/1'};
 for k=1:numel(sources), wire(model,sources{k},sprintf('Log signals/%d',k)); end
 wire(model,'Log signals/1','Recorded signals/1');
+configure_course_reference(model,true);
 save_system(model);
 Simulink.exportToVersion(model,fullfile(project.experiments,[model '_R2021a.slx']),'R2021a');
 end
