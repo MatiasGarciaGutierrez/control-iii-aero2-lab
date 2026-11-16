@@ -1,6 +1,6 @@
 # AERO 2 laboratory report — Part II
 
-This report follows [Part II of the laboratory guide, pages 4–6](../course/Automatic_Control_III_Computer_Room_II.pdf). Questions 1–5 and the optional position-integral controller are implemented and simulated. Question 4 tests ideal motor tracking; Question 5 connects the IP motor loops to the supplied nonlinear plant. Hardware validation remains a later step requiring professor approval.
+This report follows [Part II of the laboratory guide, pages 4–6](../course/Automatic_Control_III_Computer_Room_II.pdf). Questions 1–5 and the optional position-integral controller are implemented and simulated. Question 4 tests ideal motor tracking; Question 5 connects the IP motor loops to the supplied nonlinear plant. A separate hardware-interface port is now available; its offline checks and outstanding hardware validation are documented below.
 
 ## The physical system and signals
 
@@ -57,7 +57,7 @@ Body and rotor accelerations have the same units (rad/s²) but describe differen
 
 The Scope audit checks all seven activity models and their exports in R2024b. Required inputs are connected, acceleration discrepancies stay below $10^{-10}$ rad/s², and the Question 1–5 and optional simple/experiment pairs match exactly.
 
-The simulation comparisons and recovery generators remain in the experiment copies. Questions 4–5 and the optional controller default to the course trajectory. Validation explicitly selects the step, disturbance and recovery inputs used for the performance tables below. Later hardware-validation activities have no executable hardware model yet; they require professor approval and the actual device interface.
+The simulation comparisons and recovery generators remain in the experiment copies. Questions 4–5 and the optional controller default to the course trajectory. Validation explicitly selects the step, disturbance and recovery inputs used for the performance tables below. A separate [hardware-interface port](hardware.md) now connects Question 5 to the professor's QUARC interface. Its offline results include measurement-filter delay; actual hardware validation still requires professor review and laboratory checks.
 
 ### Default course reference for position control
 
@@ -990,3 +990,22 @@ Settling time is measured from the command change until the response enters and 
 Controller-performance results use ideal measurements and the supplied simplified model. Figures are actual Simulink diagram exports or plots of logged signals, not native Scope-window screenshots. The original course files are unchanged.
 
 Validation was performed in MATLAB R2024b. The models include R2021a exports tested in R2024b; actual execution in R2021a and physical hardware testing remain unverified.
+
+
+## Hardware-interface port of the full position cascade
+
+Open [aero2_hardware_cascade_R2021a.slx](../simulink/aero2_hardware_cascade_R2021a.slx) on the laboratory computer with QUARC. It connects our Question 5 PD position controller, mechanical inverse and IP motor loops to the professor's AERO 2 USB interface. The four original files in `real_hardware/` are preserved unchanged. The course reference and controller gains are embedded in the adapted model.
+
+![Full cascade connected to the professor's interface](figures/hardware_cascade_diagram.png)
+
+This is a diagram export, not a hardware screenshot. For simulation on this Mac, use the separate [offline copy](../simulink/experiments/aero2_hardware_cascade_offline.slx). It has no HIL/QUARC blocks and includes equivalent measurement filters with the course nonlinear plant.
+
+![Offline response including the hardware measurement filters](figures/hardware_cascade_offline_steps.png)
+
+The template estimates body rates with a 10 rad/s second-order filter and filters rotor speed at 180 rad/s. With these filters and our retained gains, signed angle steps settle in **5.220–5.222 s**, with 2.55–2.82% overshoot and peak voltage 22.45 V. They converge without saturation, but **fail the 3 s ±20% timing gate**. This differs from Question 5's approximately 3.2 s because estimated rates introduce additional dynamics into damping feedback and mechanical compensation. Estimator-aware tuning remains necessary before claiming the timing target.
+
+The 60 s course-reference test gives RMS tracking error 0.09795 rad yaw and 0.05880 rad pitch with ideal measurements. The zero-state test stays at rest; signals remain finite; reducing the integration step preserves the response. The offline R2021a export also runs in R2024b. Actual R2021a execution, QUARC compilation and physical testing remain unverified.
+
+The hardware model includes angle, velocity, acceleration, rotor-speed, voltage and error Scopes. Its acceleration traces are sampled-difference estimates, unlike the exact derivative signals available in the simulated course plant. The template's main/tail speed output labels were reversed relative to its controller routing; the adapted labels identify motor 0/main and motor 1/tail. Physical assignment, polarity, encoder calibration and operating limits still need checking on the rig.
+
+See [Hardware implementation and offline evidence](hardware.md) for the exact file to open, channel table, gains, Scope connections and commands. `validate_hardware_cascade` saves the repeatable results under `results/hardware_cascade/`; its `TimingMet` column explicitly records the failed timing criterion.
