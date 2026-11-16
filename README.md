@@ -11,6 +11,7 @@ Part II of the Automatic Control III laboratory. Develop and validate the contro
 | 3 — Mechanical feedback linearization | `simulink/aero2_mechanical_linearization.slx` | Yaw/pitch angles |
 | 4 — Yaw/pitch position control | `simulink/aero2_position_control.slx` | Desired/measured angles |
 | 5 — Complete cascade | `simulink/aero2_cascade_control.slx` | Angles, rotor speeds, applied voltage |
+| Optional — Position integral action | `simulink/aero2_position_integral.slx` | Angles, rotor speeds, applied voltage |
 
 The question models contain essential control/plant connections, a basic reference and basic scopes. The IP answer shows `v_raw = I - Kp*omega` and its anti-windup feedback directly. It has no recovery-step generator, PI/IP selector or diagnostic logging bundle.
 
@@ -27,6 +28,8 @@ Press Run. The motor examples command main +100 and tail -100 rad/s at 0.1 s. Qu
 
 For Question 4, open `aero2_position_control.slx` and its `Angle scope`. Its reference steps to yaw 0.2 rad and pitch 0.1 rad at 0.2 s. The measured ideal settling time is 2.996 s for a 3 s target. Question 5 connects the IP loops to the supplied plant. Open `aero2_cascade_control.slx` and its `Angle scope`, `Rotor speed scope` and `Voltage scope`. Its measured settling is 3.204–3.210 s, with no nominal overshoot or voltage saturation. This meets the working ±20% tolerance around 3 s.
 
+The optional model adds position integral action and outer anti-windup without replacing Question 5. Nominal settling is 3.042–3.050 s. The separate experiment compares rejection of constant external torques and recovery after temporary voltage-authority loss. See the optional section in the report for the gain derivation and tradeoffs.
+
 The [report](docs/report.md) shows the simple diagrams first, then derives each controller and explains the separate experiment settings and results.
 
 ## Separate experiment copies
@@ -38,6 +41,7 @@ The diagnostic models are under `simulink/experiments/` and have unique `_experi
 - `aero2_mechanical_linearization_experiment.slx`: acceleration pulses, nonzero initial state, analytical comparison and residual diagnostics.
 - `aero2_position_control_experiment.slx`: signed single-axis/simultaneous angle tests and position-loop diagnostics.
 - `aero2_cascade_control_experiment.slx`: complete controller, true/measured state logging, sensor tests and the supplied smooth trajectory.
+- `aero2_position_integral_experiment.slx`: optional integral action, disturbance injection and outer anti-windup comparisons.
 
 Open them by full path; `setup_project` returns `project.experiments` without adding that directory to the MATLAB path. For example:
 
@@ -59,6 +63,9 @@ export_motor_ip_figures;
 export_feedback_linearization_figures;
 export_position_control_figures;
 export_cascade_control_figures;
+validate_position_integral;
+validate_position_integral_models;
+export_position_integral_figures;
 ```
 
 Generated raw recordings and numerical tables go under ignored `results/`. Selected evidence is committed under `docs/figures/`. The simple models have no To Workspace logging blocks; the equivalence check temporarily instruments them in memory and discards those changes.
@@ -74,6 +81,8 @@ build_position_control;
 build_position_control_experiment;
 build_cascade_control;
 build_cascade_control_experiment;
+build_position_integral;
+build_position_integral_experiment;
 ```
 
 The Question 1–3 builders recreate their experiment copy and then the simple answer. For Questions 4–5, build each simple model first and its experiment copy second, as shown above. The separate `build_*_experiment` functions can rebuild only the diagnostic model. Lasting diagram edits belong in the builders, because rebuilding overwrites generated models.
