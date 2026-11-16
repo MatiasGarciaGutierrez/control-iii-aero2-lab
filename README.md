@@ -8,7 +8,7 @@ Part II of the Automatic Control III laboratory. Develop and validate the contro
 |---|---|---|
 | 1 — PI motor-speed control | `simulink/aero2_motor_pi.slx` | Speed, voltage |
 | 2 — IP with anti-windup | `simulink/aero2_motor_ip.slx` | Speed, voltage |
-| 3 — Mechanical feedback linearization | `simulink/aero2_mechanical_linearization.slx` | Yaw/pitch angles |
+| 3 — Mechanical feedback linearization | `simulink/aero2_mechanical_linearization.slx` | Angles, body velocity, commanded/actual acceleration |
 | 4 — Yaw/pitch position control | `simulink/aero2_position_control.slx` | Desired/measured angles |
 | 5 — Complete cascade | `simulink/aero2_cascade_control.slx` | Angles, rotor speeds, applied voltage |
 | Optional — Position integral action | `simulink/aero2_position_integral.slx` | Angles, rotor speeds, applied voltage |
@@ -24,7 +24,7 @@ open_system('aero2_motor_ip/Speed scope');
 open_system('aero2_motor_ip/Voltage scope');
 ```
 
-Press Run. The motor examples command main +100 and tail -100 rad/s at 0.1 s. Question 3 starts at zero state and applies a vector acceleration Step `[0.15;-0.1]` rad/s² at 0.2 s, assuming ideal rotor-speed tracking. Question 3 does not regulate position. Question 4 uses the inverse to track desired yaw/pitch angles, still assuming perfect motor tracking.
+Press Run. The motor examples command main +100 and tail -100 rad/s at 0.1 s. Question 3 starts at zero state and applies a vector acceleration Step `[0.15;-0.1]` rad/s² at 0.2 s, assuming ideal rotor-speed tracking. Question 3 does not regulate position. Its `Angle scope` shows yaw/pitch angles, `Rate scope` shows body angular velocities, and `Acceleration scope` compares commanded and actual body angular accelerations. The report's pulse experiment uses different initial conditions and a pulse instead of the simple model's step. Question 4 uses the inverse to track desired yaw/pitch angles, still assuming perfect motor tracking.
 
 For Question 4, open `aero2_position_control.slx` and its `Angle scope`. Its reference steps to yaw 0.2 rad and pitch 0.1 rad at 0.2 s. The measured ideal settling time is 2.996 s for a 3 s target. Question 5 connects the IP loops to the supplied plant. Open `aero2_cascade_control.slx` and its `Angle scope`, `Rotor speed scope` and `Voltage scope`. Its measured settling is 3.204–3.210 s, with no nominal overshoot or voltage saturation. This meets the working ±20% tolerance around 3 s.
 

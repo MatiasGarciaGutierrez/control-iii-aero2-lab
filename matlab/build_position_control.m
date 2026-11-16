@@ -12,6 +12,12 @@ while ~isempty(lines)
     lines=find_system(model,'FindAll','on','SearchDepth',1,'Type','line');
 end
 delete_block([model '/Virtual acceleration a']);
+% Question 3's new monitoring scopes do not belong in the minimal Question 4 answer.
+for name={'Rate scope','Acceleration scope'}, delete_block([model '/' name{1}]); end
+root=sfroot;
+plant=root.find('-isa','Stateflow.EMChart','Path',[model '/Ideal-speed course mechanics']);
+plant.Script=strrep(plant.Script,'function [dx, acceleration]','function dx');
+plant.Script=strrep(plant.Script,'acceleration = fullDerivative(3:4);','');
 notes=find_system(model,'FindAll','on','Type','annotation');
 for k=1:numel(notes), delete(get_param(notes(k),'Object')); end
 workspace=get_param(model,'ModelWorkspace');

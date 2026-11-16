@@ -80,13 +80,10 @@ if question<3
     end
 else
     removeOthers(model,{'Mechanical inverse','Ideal-speed course mechanics', ...
-        'Mechanical state','Angles and rates','Angle scope'});
+        'Mechanical state','Angles and rates','Angle scope','Rate scope','Acceleration scope'});
     root=sfroot;
     inverse=root.find('-isa','Stateflow.EMChart','Path',[model '/Mechanical inverse']);
     inverse.Script=strrep(inverse.Script,'function [omegaDesired, s]', 'function omegaDesired');
-    plant=root.find('-isa','Stateflow.EMChart','Path',[model '/Ideal-speed course mechanics']);
-    plant.Script=strrep(plant.Script,'function [dx, acceleration]', 'function dx');
-    plant.Script=strrep(plant.Script,'acceleration = fullDerivative(3:4);','');
     ws=get_param(model,'ModelWorkspace'); assignin(ws,'X0',zeros(4,1));
     add_block('simulink/Sources/Step',[model '/Virtual acceleration a'], ...
         'Time','0.2','Before','[0;0]','After','[0.15;-0.1]','SampleTime','0', ...
@@ -96,6 +93,8 @@ else
     set_param([model '/Mechanical state'],'Position',[870 190 920 240]);
     set_param([model '/Angles and rates'],'Position',[870 390 875 470]);
     set_param([model '/Angle scope'],'Position',[1050 190 1130 250]);
+    set_param([model '/Acceleration scope'],'Position',[1050 300 1130 360]);
+    set_param([model '/Rate scope'],'Position',[1050 440 1130 500]);
     wire(model,'Virtual acceleration a/1','Mechanical inverse/3');
     wire(model,'Mechanical inverse/1','Ideal-speed course mechanics/2');
     wire(model,'Mechanical state/1','Ideal-speed course mechanics/1');
@@ -104,6 +103,15 @@ else
     wire(model,'Angles and rates/1','Mechanical inverse/1');
     wire(model,'Angles and rates/2','Mechanical inverse/2');
     wire(model,'Angles and rates/1','Angle scope/1');
+    wire(model,'Angles and rates/2','Rate scope/1');
+    wire(model,'Virtual acceleration a/1','Acceleration scope/1');
+    wire(model,'Ideal-speed course mechanics/2','Acceleration scope/2');
+    scopes={'Angle scope','Rate scope','Acceleration scope'};
+    units={'Angle [rad]','Body angular velocity [rad/s]','Body angular acceleration [rad/s^2]'};
+    for k=1:numel(scopes)
+        config=get_param([model '/' scopes{k}],'ScopeConfiguration');
+        config.ShowLegend=true; config.ShowGrid=true; config.TimeSpan='2'; config.YLabel=units{k};
+    end
     title='Question 3: feedback linearization, ideal rotor tracking; a is acceleration';
 end
 note=Simulink.Annotation(model,title); note.Position=[40 30 1100 80];

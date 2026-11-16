@@ -433,6 +433,24 @@ The simple model starts with zero angles and rates. One vector Step changes virt
 
 This model commands acceleration, not angle setpoints. The inverse calculates rotor speeds; the ideal-speed mechanics uses them immediately. The mechanics block outputs `dx`, the four state derivatives. The **Mechanical state** integrator produces `x`; **Angles and rates** separates it into `q` and `dq` for feedback. There is no position controller yet.
 
+The simple model now exposes all three motion quantities directly:
+
+| Scope | Signals | Units |
+|---|---|---|
+| **Angle scope** | Yaw and pitch position | rad |
+| **Rate scope** | Yaw and pitch body angular velocity | rad/s |
+| **Acceleration scope** | Commanded yaw/pitch acceleration on input 1; actual yaw/pitch acceleration on input 2 | rad/s² |
+
+Actual acceleration comes directly from the mechanical equations, not from numerically differentiating a measured velocity. The command and actual traces should overlap under ideal motor tracking. These body velocities are distinct from the main/tail propeller speeds.
+
+```matlab
+open_system('aero2_mechanical_linearization/Angle scope');
+open_system('aero2_mechanical_linearization/Rate scope');
+open_system('aero2_mechanical_linearization/Acceleration scope');
+```
+
+Press **Run** to fill the Scopes. The report's plots below use the separate pulse experiment and nonzero initial rates. The simple model retains its original acceleration step and zero initial state, so its curves differ: acceleration stays constant after 0.2 s, velocity ramps, and position follows a parabola.
+
 ### Separate simulation experiment and result
 
 The [feedback-linearization experiment](../simulink/experiments/aero2_mechanical_linearization_experiment.slx) uses a different demonstration input to test the cancellation:
