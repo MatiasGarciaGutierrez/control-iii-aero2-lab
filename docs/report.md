@@ -1,6 +1,6 @@
 # AERO 2 laboratory report — Part II
 
-This report follows [Part II of the laboratory guide, pages 4–6](../course/Automatic_Control_III_Computer_Room_II.pdf). Questions 1–5 are implemented and simulated. Question 4 tests ideal motor tracking; Question 5 connects the IP motor loops to the supplied nonlinear plant. Hardware validation remains a later step requiring professor approval.
+This report follows [Part II of the laboratory guide, pages 4–6](../course/Automatic_Control_III_Computer_Room_II.pdf). Questions 1–5 and the optional position-integral controller are implemented and simulated. Question 4 tests ideal motor tracking; Question 5 connects the IP motor loops to the supplied nonlinear plant. Hardware validation remains a later step requiring professor approval.
 
 ## The physical system and signals
 
@@ -28,6 +28,7 @@ Start with the **simple answer models** in `simulink/`. They contain the essenti
 | 3 — Feedback linearization | [aero2_mechanical_linearization.slx](../simulink/aero2_mechanical_linearization.slx) |
 | 4 — Yaw/pitch position control | [aero2_position_control.slx](../simulink/aero2_position_control.slx) |
 | 5 — Complete cascade | [aero2_cascade_control.slx](../simulink/aero2_cascade_control.slx) |
+| Optional — Position integral action | [aero2_position_integral.slx](../simulink/aero2_position_integral.slx) |
 
 Separate copies in `simulink/experiments/` contain recovery-step generators, comparison switches and detailed logging. Those blocks support validation; they are not extra parts of the required controller. Experiment filenames add `_experiment` before `.slx`.
 
@@ -701,7 +702,7 @@ The validation script reproduces the original initialization script's 60 s refer
 
 Signals and integrators remain bounded, and peak absolute pitch stays below 0.575 rad (32.95°). There is visible tracking lag. Passing the constant-step specification does not imply accurate tracking of a changing reference. Trajectory feedforward would be a separate extension, not part of this implementation.
 
-**Conclusion:** the complete simulated cascade meets the nominal angle-step timing criterion with the original gains, while respecting voltage and pitch limits. Sensor effects leave small residual errors; moving references show lag. The next required stage is professor review before section-by-section hardware validation. The optional position integrator has not been added.
+**Conclusion:** the complete simulated cascade meets the nominal angle-step timing criterion with the original gains, while respecting voltage and pitch limits. Sensor effects leave small residual errors; moving references show lag. The next required stage is professor review before section-by-section hardware validation. The optional position integrator is developed separately below; it does not replace this baseline.
 
 ### Reproduce and visualize Question 5
 
@@ -721,6 +722,132 @@ open_system('aero2_cascade_control/Voltage scope');
 Press **Run** to visualize the saved simple model; rebuilding is optional. Double-click **IP motor control** to inspect its connections. Raw recordings and four metric tables are saved under `results/cascade_*`. The diagnostic output `out.cascade_data` has columns: reference angles 1–2, measured angles 3–4, measured rates 5–6, desired acceleration 7–8, desired rotor speeds 9–10, measured rotor speeds 11–12, raw voltages 13–14, applied voltages 15–16, IP integral states 17–18, true angles 19–20, true rates 21–22 and true rotor speeds 23–24.
 
 The saved models and R2021a exports are simulated in MATLAB R2024b. Actual R2021a execution and hardware testing remain unverified.
+
+## Optional — Position integral action
+
+### Purpose and controller
+
+The guide asks us to add position integral action without significantly changing settling time. The motor IP integrators already control rotor speed; these new integrators accumulate **yaw/pitch position error**. They help reject persistent external torques that the nominal inverse does not know about.
+
+Question 5 remains unchanged. The separate optional controller uses
+
+```math
+\dot J=K_i^q(q_d-q),\qquad
+ a=K_p^q(bq_d-q)-K_d^q\dot q+J.
+```
+
+Here $J$ is an acceleration contribution, in rad/s². It already includes the integral gain. The reference weight $b$ prevents the new integral action from substantially changing the nominal step response. Derivative feedback still acts on measured velocity, so there is no differentiated reference step.
+
+### Gain selection
+
+With ideal motor tracking and a constant reference, each axis has characteristic polynomial
+
+```math
+s^3+K_d^q s^2+K_p^q s+K_i^q.
+```
+
+Choose the three stable poles at $-\lambda$, using Question 4's $\lambda=1.9446406$ s⁻¹. Matching $(s+\lambda)^3$ gives
+
+```math
+K_d^q=3\lambda,\qquad K_p^q=3\lambda^2,\qquad K_i^q=\lambda^3.
+```
+
+We also choose $b=1/3$. The ideal reference-to-angle transfer function becomes
+
+```math
+\frac{Q(s)}{Q_d(s)}
+=\frac{bK_p^q s+K_i^q}{s^3+K_d^q s^2+K_p^q s+K_i^q}
+=\frac{\lambda^2(s+\lambda)}{(s+\lambda)^3}
+=\frac{\lambda^2}{(s+\lambda)^2}.
+```
+
+This preserves the original ideal 3 s step response from rest. The additional pole remains part of the internal and disturbance dynamics; it has not disappeared from the system. The matching is nominal and does not guarantee an identical response with finite motor tracking or saturation.
+
+[The parameter function](../matlab/parameters/position_integral_parameters.m) stores the gains. The diagram uses `Kref=b*Kpos`, so the acceleration sum is `Kref*q_d - Kpos*q - Dpos*dq + J`.
+
+| Parameter | Value |
+|---|---:|
+| `Kref` | 3.7816269 |
+| `Kpos` | 11.3448808 |
+| `Dpos` | 5.8339217 |
+| `Kint` | 7.3539 (stored at full precision) |
+| Reference weight `b` | 1/3 |
+
+### Simple model and outer anti-windup
+
+![Separate optional complete controller](figures/position_integral_diagram.png)
+
+![Inside the position-integral controller](figures/position_integral_controller.png)
+
+The figures above are Simulink diagram exports. Open [aero2_position_integral.slx](../simulink/aero2_position_integral.slx). Double-click **Position integral control** to see the gains, integral contribution and anti-windup gate. The default reference is still yaw 0.2 rad and pitch 0.1 rad at 0.2 s, from rest. The motor IP gains, nominal ±24 V limits, 0.002 s solver step, ideal sensors and three basic Scopes are retained from Question 5.
+
+The new outer anti-windup rule pauses **both** position integrators whenever either motor's raw voltage differs from its limited voltage. Otherwise, $\dot J=K_i^q(q_d-q)$. Both axes pause because rotor action is coupled. This conservative rule prevents accumulation during voltage saturation; it does not actively discharge stored integral action or account for every possible hardware constraint. The motor-loop back-calculation remains active as well.
+
+The simple plant is copied unchanged. Only the [experiment copy](../simulink/experiments/aero2_position_integral_experiment.slx) adds external torque injection, temporary voltage-authority changes, an outer anti-windup comparison parameter and logging. External torque is added through $\Delta\ddot q=M_q(q)^{-1}\tau_d$; the nonlinear inverse is not told its value.
+
+### Nominal results and tradeoff
+
+The same six signed single-axis and simultaneous steps used in Question 5 are repeated.
+
+| Metric | Question 5 PD | Optional integral controller |
+|---|---:|---:|
+| Settling time | 3.204–3.210 s | **3.042–3.050 s** |
+| Overshoot | 0% | Less than 0.025% |
+| Peak voltage across nominal tests | 21.76 V | **23.66 V** |
+| Nominal saturation duration | 0 s | 0 s |
+| Largest final angle error at 8 s | $7.98\times10^{-6}$ rad | $1.03\times10^{-5}$ rad |
+
+![Nominal angles and angular velocities with and without optional action](figures/position_integral_nominal.png)
+
+The optional controller keeps settling near 3 s, with a very small overshoot. It uses more voltage and leaves less actuator margin. Its main benefit is disturbance rejection, not a large improvement in the already accurate nominal model. A nonzero final $J$ is normal: it balances the weighted proportional feedback even when the position error is zero.
+
+### Constant-disturbance comparison
+
+At 5 s, apply an unknown constant yaw torque of +0.010 N m and pitch torque of -0.008 N m. Hold the desired angles at `[0.2;0.1]` rad. Both controllers use the same disturbed plant. Measure the final errors over 18–20 s with ideal sensors.
+
+| Axis | PD mean position error | With integral action |
+|---|---:|---:|
+| Yaw | -0.004166 rad | Below $10^{-9}$ rad in magnitude |
+| Pitch | +0.002953 rad | Below $10^{-9}$ rad in magnitude |
+
+![Position error, angular velocity and integral compensation after disturbance](figures/position_integral_disturbance.png)
+
+The PD controller needs a persistent position error to generate the acceleration command that balances the unknown torque. The integrator stores that compensation, allowing the angle error to return to numerical zero. The tests also reverse both torque signs and verify rejection again. These tiny residuals belong to the ideal simulated model, not a claim of achievable hardware accuracy.
+
+### Outer windup and recovery
+
+A separate stress experiment temporarily reduces the available voltage to **±2 V** until 4 s, then restores **±24 V**. The yaw reference is 0.4 rad from 0.2 s; at 4 s it changes to 0.05 rad. Pitch stays at zero. This is an artificial loss-of-authority test, not a different nominal actuator specification.
+
+| Stress-test metric | Outer anti-windup off | Outer anti-windup on |
+|---|---:|---:|
+| Peak outer integral contribution | 10.368 rad/s² | 0.3783 rad/s² |
+| Peak yaw angle over the full test | 1.0475 rad | 0.1028 rad |
+| Settling after the 4 s return, ±0.001 rad band | 7.534 s | 4.786 s |
+
+![Outer windup, voltage authority and recovery comparison](figures/position_integral_recovery.png)
+
+The motor-loop anti-windup is enabled in both runs. It cannot prevent the separate position integrators from accumulating. Pausing the outer integrators sharply reduces stored action and subsequent overshoot, although recovery is still not instantaneous. The validation checks that $J$ is unchanged over each saturated Euler update when outer anti-windup is enabled.
+
+### Other checks and reproduction
+
+Validation also checks the independent ideal augmented-state response, zero-reference rest, the ±60° pitch stop, noisy measurements, and solver refinement. With integral action disabled and the original PD gains restored in the experiment, the default Question 5 angles/rates agree within $10^{-10}$. The optional simple and experiment copies give identical default signals (maximum difference 0).
+
+With sensor effects enabled, final-window true-error RMS over 6–8 s is 0.000607 rad for yaw and 0.000341 rad for pitch. Exact convergence is not expected. Halving the integration step gives nominal settling of 3.050 s for yaw and 3.044 s for pitch, preserves disturbance rejection, and changes anti-windup recovery from 4.786 to 4.790 s. R2021a exports are run in the available R2024b installation; actual R2021a execution and hardware testing remain separate checks.
+
+```matlab
+project = setup_project;
+build_position_integral;
+build_position_integral_experiment;
+validate_position_integral;
+validate_position_integral_models;
+export_position_integral_figures;
+open_system(fullfile(project.simulink,'aero2_position_integral.slx'));
+open_system('aero2_position_integral/Angle scope');
+```
+
+The experiment records `out.integral_data`. Its first 24 columns match the Question 5 logging order; columns 25–26 are the outer integral contribution and 27–28 are the applied external torques. Raw data and metrics go under `results/position_integral_*`.
+
+**Conclusion:** optional integral action rejects constant model-mismatch torques while retaining approximately 3 s nominal settling. It adds tuning complexity, slightly more overshoot and higher peak voltage. Outer anti-windup is necessary when actuator saturation prevents the position loop from achieving its command.
 
 ## Rebuild and repeat the checks
 
