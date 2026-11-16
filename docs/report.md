@@ -216,9 +216,11 @@ Both motors and both sign directions give these results. Applied voltage remains
 
 ### What the guide asks
 
-Assume perfect motor tracking, $\omega=\omega_d$. Find a control law that linearizes the yaw/pitch dynamics, identify its states and state where it is valid.
+Assume perfect motor tracking, $\omega=\omega_d$, and find a control law that linearizes the yaw/pitch dynamics. The guide also explicitly asks us to:
 
-### Equations and control law
+> Identify the state variables of the linearized system and determine the validity range of the resulting control law.
+
+### Start with the mechanical equations
 
 The simplified mechanical model is
 
@@ -267,11 +269,77 @@ Lk_f&k_t
 \end{bmatrix}.
 ```
 
-Choose a virtual acceleration $a=[a_\psi,a_\theta]^T$. The control law has three steps:
+### Write the plant as state space
+
+The mechanical equation above is second order. To write it as $\dot x=f(x,u)$, include both angles and angular velocities in the state:
+
+```math
+x=\begin{bmatrix}
+x_1 & x_2 & x_3 & x_4
+\end{bmatrix}^{T}
+=\begin{bmatrix}
+\psi & \theta & \dot\psi & \dot\theta
+\end{bmatrix}^{T}.
+```
+
+The mechanical plant inputs are the two propeller spin speeds:
+
+```math
+u=\begin{bmatrix}
+u_1 \\
+u_2
+\end{bmatrix}
+=\begin{bmatrix}
+\omega_m \\
+\omega_t
+\end{bmatrix}.
+```
+
+Under perfect tracking, these equal the commanded speeds. They are inputs here, rather than extra motor states. Rearranging the mechanical equation gives the two accelerations. In first-order form:
+
+```math
+\dot x=f(x,u)=\begin{bmatrix}
+x_3 \\
+x_4 \\
+F_\psi(x,u) \\
+F_\theta(x,u)
+\end{bmatrix}.
+```
+
+For the supplied model, define $\Delta J=J_\psi-j_\psi$ and $D(x_2)=J_\psi\cos^2x_2+j_\psi\sin^2x_2$. Then
+
+```math
+F_\psi(x,u)=
+\frac{\cos x_2[-k_tu_1|u_1|+Lk_fu_2|u_2|]
++\Delta J\sin(2x_2)x_3x_4}{D(x_2)},
+```
+
+```math
+F_\theta(x,u)=
+\frac{Lk_fu_1|u_1|+k_tu_2|u_2|
+-\frac12\Delta J\sin(2x_2)x_3^2-G\sin x_2}{J_\theta}.
+```
+
+The first two state equations describe how angles change. The last two calculate body angular acceleration from the current state and rotor speeds. The measured output is $y=[x_1,x_2]^T=q$.
+
+### What the nonlinear inverse does
+
+Introduce a new command $a=[a_\psi,a_\theta]^T$: the **desired yaw and pitch angular accelerations**, in rad/s². It specifies how we want the body angular velocities to change. It is not the current acceleration, a new state, or a propeller speed.
+
+The inverse $u=\alpha(x,a)$ answers: “Given the current angles and angular velocities, which rotor speeds will produce acceleration $a$?” Its calculation has three steps:
 
 1. Calculate the torque needed for that acceleration: $\tau_d=M_q a+c_q+g_q$.
 2. Solve $\Gamma(\theta)s=\tau_d$ for the signed squared rotor speeds.
 3. Recover the desired speeds: $\omega_d=\mathrm{sign}(s)\sqrt{|s|}$, component by component.
+
+Writing these steps together defines the nonlinear controller:
+
+```math
+u=\alpha(x,a)=\mathrm{sign}(s)\sqrt{|s|},
+\qquad s=\Gamma(\theta)^{-1}(M_q a+c_q+g_q).
+```
+
+The code solves the matrix equation with `\` rather than calculating an explicit inverse. The functions $M_q$, $c_q$, $g_q$ and $\Gamma$ are evaluated at the current state $x$.
 
 Substitution shows why this works:
 
@@ -287,30 +355,72 @@ This is **feedback linearization**, not a Taylor approximation around an equilib
 
 The implementation uses a matrix solve and signed square root in [aero2_feedback_linearization.m](../matlab/mechanics/aero2_feedback_linearization.m). The equations and constants are in [aero2_mechanical_terms.m](../matlab/mechanics/aero2_mechanical_terms.m) and [aero2_mechanical_parameters.m](../matlab/parameters/aero2_mechanical_parameters.m).
 
-### Linearized states and validity range
+### State variables of the linearized system
 
-The four mechanical states remain
-
-```math
-z=\begin{bmatrix}
-\psi&\theta&\dot\psi&\dot\theta
-\end{bmatrix}^T.
-```
-
-Their dynamics become
+The state coordinates do not change: $z=x$. Substituting $u=\alpha(x,a)$ into the plant gives
 
 ```math
-\dot z_1=z_3,\quad\dot z_2=z_4,\quad
-\dot z_3=a_\psi,\quad\dot z_4=a_\theta.
+\dot z=f\bigl(z,\alpha(z,a)\bigr)=\begin{bmatrix}
+z_3 \\
+z_4 \\
+a_\psi \\
+a_\theta
+\end{bmatrix}.
 ```
 
-These are two double integrators. The motor states are excluded by the perfect-tracking assumption. Each angle is obtained by integrating its virtual acceleration twice.
+Equivalently, this is the familiar linear form $\dot z=Az+Ba$:
 
-The control law has these limits:
+```math
+\dot z=
+\begin{bmatrix}
+0&0&1&0 \\
+0&0&0&1 \\
+0&0&0&0 \\
+0&0&0&0
+\end{bmatrix}z+
+\begin{bmatrix}
+0&0 \\
+0&0 \\
+1&0 \\
+0&1
+\end{bmatrix}a.
+```
 
-- **Pitch singularity:** $\det\Gamma=-\cos\theta[k_t^2+(Lk_f)^2]$. The inverse requires $\cos\theta\ne0$ and fails at $\theta=\pi/2+k\pi$. We enforce the narrower **simulation envelope** $|\theta|\le60^\circ$. Crossing it stops the run; this is not a hardware travel limit.
-- **Zero speed:** the signed square root returns zero correctly, but its derivative is unbounded there. Algebraic cancellation is defined at zero; the smooth local feedback interpretation requires nonzero rotor speeds and an invertible torque map.
-- **Physical limits:** exact cancellation assumes correct parameters, exact state measurements and perfect rotor tracking. Real motors have finite voltage and bandwidth. The ideal inverse does not enforce those constraints.
+The four states are still **yaw angle, pitch angle, yaw angular velocity and pitch angular velocity**. Acceleration appears in the derivatives of the velocity states; it is not an additional state.
+
+| System | State | Input |
+|---|---|---|
+| Mechanical plant alone | $x=[\psi,\theta,\dot\psi,\dot\theta]^T$ | Propeller speeds $u=[\omega_m,\omega_t]^T$ |
+| Nonlinear inverse + mechanical plant | The same state, $z=x$ | Desired body angular acceleration $a=[a_\psi,a_\theta]^T$ |
+
+The physical plant still receives rotor speeds. The inverse makes the combined system respond to $a$ as two double integrators: $\ddot\psi=a_\psi$ and $\ddot\theta=a_\theta$.
+
+### Why this helps with position control
+
+The next controller can ask for a body acceleration without directly handling gravity and rotor coupling. The inverse handles those effects when it calculates the propeller speeds.
+
+In Question 4, we will choose an acceleration of the form
+
+```math
+a=K_p^q(q_d-q)-K_d^q\dot q.
+```
+
+The first term accelerates toward the desired orientation; the second brakes according to angular velocity. Since the compensated mechanics gives $\ddot q=a$, the result is
+
+```math
+\ddot q+K_d^q\dot q+K_p^q q=K_p^q q_d.
+```
+
+This is a linear second-order position-control problem. Its gains can be selected for the 3 s settling-time target. This explains the purpose of Question 3; the position controller and its gains are not implemented yet. These future position gains are separate from the motor PI/IP gains.
+
+### Validity range of the control law
+
+The cancellation is exact for the ideal model, subject to these conditions:
+
+- **Pitch:** $\det\Gamma=-\cos\theta[k_t^2+(Lk_f)^2]$, so we require $\cos\theta\ne0$. Around horizontal pitch, the mathematical interval is $-90^\circ<\theta<90^\circ$. At either endpoint the rotor torque map is singular. The inertia matrix remains invertible because its diagonal entries are positive.
+- **Implemented envelope:** the simulation uses the narrower interval $|\theta|\le60^\circ$ and stops if it is exceeded. This is our simulation restriction, not a hardware travel limit or an equilibrium-based approximation.
+- **Zero rotor speed:** the signed square root is defined at zero, but its derivative is unbounded there. Algebraic cancellation remains evaluable at zero; a smooth local inverse additionally requires both commanded rotor speeds to be nonzero.
+- **Physical feasibility:** the derivation assumes correct parameters, exact angles/rates and perfect motor tracking. Real motors have finite voltage and bandwidth. The inverse can request speeds or speed changes they cannot achieve, so the full cascade must be checked separately.
 
 ### Simple implementation
 
@@ -318,7 +428,7 @@ The control law has these limits:
 
 The simple model starts with zero angles and rates. One vector Step changes virtual acceleration from `[0;0]` to `[0.15;-0.1]` rad/s² at 0.2 s. It runs for 2 s with the 0.002 s Euler step. The Angle scope shows yaw and pitch.
 
-This model commands acceleration, not angle setpoints. The inverse calculates rotor speeds; the ideal-speed mechanics uses them immediately. Its state integrator returns angles and rates for feedback. There is no position controller yet.
+This model commands acceleration, not angle setpoints. The inverse calculates rotor speeds; the ideal-speed mechanics uses them immediately. The mechanics block outputs `dx`, the four state derivatives. The **Mechanical state** integrator produces `x`; **Angles and rates** separates it into `q` and `dq` for feedback. There is no position controller yet.
 
 ### Separate simulation experiment and result
 
