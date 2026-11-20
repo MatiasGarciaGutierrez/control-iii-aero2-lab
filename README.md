@@ -1,8 +1,21 @@
 # Control III AERO 2 laboratory
 
-Part II of the Automatic Control III laboratory. Develop and validate the controller one question at a time, preserving the supplied course files.
+Parts I and II of the Automatic Control III laboratory. Develop and validate one question at a time, preserving the supplied course files.
 
-## Start with the simple question models
+## Part I — Question 1(a)
+
+Open [part1_pendulum.slx](simulink/part1_pendulum.slx) and press Run. This is the nonlinear pendulum plant with zero input, an initial angle of 0.1 rad and zero initial angular velocity. Open **Angle scope** to observe the unforced motion. On MATLAB R2021a, use [part1_pendulum_R2021a.slx](simulink/part1_pendulum_R2021a.slx).
+
+The [report](docs/report.md#part-i--question-1a-nonlinear-inverted-pendulum) derives the state equations and explains the blocks, settings and simulation evidence. To rebuild and validate from the repository as MATLAB's Current Folder:
+
+```matlab
+setup_project;
+build_pendulum;
+validate_pendulum;
+export_pendulum_figures;
+```
+
+## Part II — Start with the simple question models
 
 | Activity | File to open in Simulink | Available views |
 |---|---|---|
