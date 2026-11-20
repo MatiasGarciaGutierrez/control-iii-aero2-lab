@@ -61,6 +61,64 @@ open_system('part1_pendulum/Angle scope');
 
 The validation instruments the model only in memory and closes it without saving the diagnostic logging. It checks zero-input upright equilibrium, both signs of an initial tilt, and both signs of a constant input from rest against independent `ode45` integration. Unforced energy $E=\frac12ml^2\dot\theta^2+mgl\cos\theta$ must be nonincreasing, since $\dot E=-k\dot\theta^2$ when $u=0$. It also compares the exported model's default trajectory. Generated raw results are kept in ignored `results/`. No hardware results are claimed.
 
+## Part I — Question 1(b): input-output feedback linearization
+
+For $y=\theta$, the first derivative is $\dot y=\dot\theta$ and does not contain the input. Differentiate again:
+
+```math
+\ddot y=\underbrace{(g/l)\sin\theta-k\dot\theta/(ml^2)}_{a(x)}
++\underbrace{\cos\theta/(ml^2)}_{b(x)}u.
+```
+
+The relative degree is two wherever $\cos\theta\ne0$. Solving $a(x)+b(x)u=v$ gives
+
+```math
+u=\frac{ml^2v-mgl\sin\theta+k\dot\theta}{\cos\theta}
+=\frac{0.05v-0.981\sin\theta+0.05\dot\theta}{\cos\theta}.
+```
+
+Substitution cancels the gravity and friction terms exactly, leaving $\ddot\theta=v$. The new input $v$ is angular acceleration, not a desired angle. The state coordinates remain $z_1=\theta$, $z_2=\dot\theta$, with $\dot z_1=z_2$ and $\dot z_2=v$. Since the relative degree equals the two-state dimension, no internal dynamics remain.
+
+The controller is defined where $\theta\ne\pi/2+j\pi$, $j\in\mathbb Z$. The connected interval containing upright is $-\pi/2<\theta<\pi/2$. It is valid only while the trajectory stays away from its boundary; near horizontal, the required input can grow without bound. The model does not clip the denominator or saturate the input, because either operation would change the exact cancellation. This is an ideal simulation with exact parameters and state feedback. It does not establish hardware feasibility or robust stabilization.
+
+### Simulink implementation
+
+Open [part1_pendulum_linearization.slx](../simulink/part1_pendulum_linearization.slx), or its [R2021a export](../simulink/part1_pendulum_linearization_R2021a.slx). Question 1(a)'s saved model remains available separately.
+
+![Feedback-linearization model diagram export](figures/pendulum_linearization_diagram.png)
+
+The **Nonlinear pendulum** subsystem copies the nine plant blocks and their equations from Question 1(a). Its input is $u$, and its outputs are angle, angular velocity and angular acceleration. The angle and rate are fed back to **Linearizing controller**. No numerical Derivative block is needed: angular velocity is already an integrator state.
+
+![Linearizing-controller subsystem diagram export](figures/pendulum_linearization_controller.png)
+
+Inside the controller, three Gain blocks and a `+-+` Sum form $ml^2v-mgl\sin\theta+k\dot\theta$. A Product block configured as `*/` divides this numerator by $\cos\theta$. Sine and cosine use radians. These figures are **Simulink diagram exports**, not UI screenshots.
+
+The saved model starts at $\theta(0)=0.1$ rad and $\dot\theta(0)=0$. The **Virtual acceleration v** Step changes from 0 to 0.2 rad/s² at 0.2 s; simulation ends at 2 s. It uses the same `ode45` tolerances and maximum step as Question 1(a). Model parameters and initial conditions live in the model workspace.
+
+Press Run and open **Acceleration scope**: actual acceleration and virtual input should overlap. **Angle scope**, **Rate scope** and **Input scope** show the angle, angular velocity and physical plant input. Before the step, cancellation holds the initial angle. After the step, the expected response is
+
+```math
+\theta(t)=0.1+\tfrac12(0.2)\max(t-0.2,0)^2,
+\qquad \dot\theta(t)=0.2\max(t-0.2,0).
+```
+
+Thus the expected final angle is 0.424 rad and final rate is 0.36 rad/s. This deliberately demonstrates acceleration control without the stabilizing law from Question 1(c). Even with $v=0$, a nonzero initial velocity produces drift.
+
+![Logged simulation response with acceleration comparison](figures/pendulum_linearization_response.png)
+
+The response figure contains **plots of logged simulation signals**, not Scope UI screenshots. Validation temporarily enables logging in memory, then discards those instrumentation changes. It tests both signs of virtual acceleration, drift with nonzero initial rate, and zero-acceleration holds at $\theta=\pm1.3$ rad. Each trajectory is compared with the analytical double-integrator solution; actual acceleration must match $v$ within $10^{-10}$ rad/s² and angle/rate errors must stay below $2\times10^{-7}$ in their respective units. Raw recordings are stored in ignored `results/`.
+
+All five cases passed in MATLAB/Simulink R2024b. Maximum angle error was $7.75\times10^{-15}$ rad, maximum rate error was $4.45\times10^{-15}$ rad/s, and maximum acceleration discrepancy was $1.61\times10^{-15}$ rad/s² (rounded up). The default trajectory ended at 0.424 rad and 0.36 rad/s. The $\pm1.3$ rad holds required input magnitude 3.5337 N m, illustrating increasing control demand away from upright. No actuator limit is specified for this theoretical exercise. The R2021a export reproduced the default trajectory when run in R2024b; actual execution in R2021a remains unverified. No hardware experiments were performed.
+
+```matlab
+setup_project;
+build_pendulum_linearization;
+validate_pendulum_linearization;
+export_pendulum_linearization_figures;
+open_system('part1_pendulum_linearization');
+open_system('part1_pendulum_linearization/Acceleration scope');
+```
+
 ## Part II — AERO 2
 
 This report follows [Part II of the laboratory guide, pages 4–6](../course/Automatic_Control_III_Computer_Room_II.pdf). Questions 1–5 and the optional position-integral controller are implemented and simulated. Question 4 tests ideal motor tracking; Question 5 connects the IP motor loops to the supplied nonlinear plant. Hardware validation remains a later step requiring professor approval.

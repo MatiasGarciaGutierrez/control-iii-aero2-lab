@@ -15,6 +15,17 @@ validate_pendulum;
 export_pendulum_figures;
 ```
 
+## Part I — Question 1(b)
+
+Open [part1_pendulum_linearization.slx](simulink/part1_pendulum_linearization.slx) and press Run. Open **Acceleration scope** to compare virtual input $v$ with actual angular acceleration. Double-click **Linearizing controller** to see the cancellation law. The angle and velocity feed back from the original nonlinear plant. The input is a 0.2 rad/s² step at 0.2 s; this demonstrates linearization without stabilization. An [R2021a export](simulink/part1_pendulum_linearization_R2021a.slx) is included.
+
+```matlab
+setup_project;
+build_pendulum_linearization;
+validate_pendulum_linearization;
+export_pendulum_linearization_figures;
+```
+
 ## Part II — Start with the simple question models
 
 | Activity | File to open in Simulink | Available views |
