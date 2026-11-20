@@ -164,3 +164,17 @@ The five files under `course/` remain byte-identical to the `course-baseline` ta
 4. Merge only when requested, using squash, then remove the source branch.
 
 Fetch and recheck target freshness before opening or merging a PR. Rebase only short-lived branches when needed and publish rebases with `--force-with-lease`. Never rebase or force-push `master`. Check current branch protection in GitHub settings; the existing local pre-push hook is checkout-specific and is not copied by cloning.
+
+## Part I — Question 2: nonlinear DC motor
+
+Open [part1_dc_motor.slx](simulink/part1_dc_motor.slx) for the nonlinear plant from 2(a), or [part1_dc_motor_linearization.slx](simulink/part1_dc_motor_linearization.slx) for the input-output linearizing controller from 2(b). These are separate from the Part II AERO 2 motors. Both include matching `_R2021a.slx` exports.
+
+The linearizing model starts at zero state and applies a virtual jerk step from 0 to 1 rad/s³ at 0.2 s. Press Run and open **Jerk scope**: actual jerk and virtual input should overlap. **Linearizing controller** computes voltage from speed, current and the virtual input; no numerical differentiation is needed. Position tracking and stabilization are left for 2(c). The [report](docs/report.md#part-i--question-2ab-dc-motor-with-quadratic-drag) derives the law, transformed states and validity range.
+
+```matlab
+setup_project;
+build_dc_motor;
+build_dc_motor_linearization;
+validate_dc_motor;
+export_dc_motor_figures;
+```

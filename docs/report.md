@@ -1187,3 +1187,126 @@ The 60 s course-reference test gives RMS tracking error 0.09795 rad yaw and 0.05
 The hardware model includes angle, velocity, acceleration, rotor-speed, voltage and error Scopes. Its acceleration traces are sampled-difference estimates, unlike the exact derivative signals available in the simulated course plant. The template's main/tail speed output labels were reversed relative to its controller routing; the adapted labels identify motor 0/main and motor 1/tail. Physical assignment, polarity, encoder calibration and operating limits still need checking on the rig.
 
 See [Hardware implementation and offline evidence](hardware.md) for the exact file to open, channel table, gains, Scope connections and commands. `validate_hardware_cascade` saves the repeatable results under `results/hardware_cascade/`; its `TimingMet` column explicitly records the failed timing criterion.
+
+## Part I — Question 2(a–b): DC motor with quadratic drag
+
+Reference: [laboratory guide, page 2](../course/Automatic_Control_III_Computer_Room_II.pdf). This motor is a separate theoretical plant, not the Part II AERO 2 motor model.
+
+### State-space model and output derivatives
+
+Choose $x_1=\theta$, $x_2=\omega=\dot\theta$, $x_3=i_a$. The input $u$ is armature voltage and the output is $y=\theta$. With the given parameters,
+
+```math
+\dot x_1=x_2,\qquad
+\dot x_2=20x_3-x_2-0.5x_2|x_2|,\qquad
+\dot x_3=-4x_2-40x_3+20u.
+```
+
+Differentiate the output until the voltage appears:
+
+```math
+y=x_1,\qquad \dot y=x_2,\qquad
+\ddot y=\alpha=20x_3-x_2-0.5x_2|x_2|.
+```
+
+The voltage has not yet appeared explicitly. Since $\frac{d}{d\omega}(\omega|\omega|)=2|\omega|$ (including at zero), another derivative gives
+
+```math
+y^{(3)}=20\dot x_3-(1+|x_2|)\dot x_2
+=\underbrace{-80x_2-800x_3-(1+|x_2|)\alpha}_{a(x)}+\underbrace{400}_{b(x)}u.
+```
+
+The relative degree is $r=3$. The physical motor input sets the third position derivative (angular jerk), rather than directly setting acceleration as in the pendulum.
+
+### Input-output linearizing voltage
+
+Impose $y^{(3)}=v$ and solve for $u$:
+
+```math
+\boxed{u=\frac{v+80x_2+800x_3+(1+|x_2|)\alpha}{400},\quad
+\alpha=20x_3-x_2-0.5x_2|x_2|.}
+```
+
+For clarity, the symbolic physical-parameter form is
+
+```math
+u=\frac{JL_a}{K_T}v+R_ai_a+K_e\omega
++\frac{L_a}{K_T}(d_1+2d_2|\omega|)\alpha,
+\qquad \alpha=\frac{K_Ti_a-d_1\omega-d_2\omega|\omega|}{J}.
+```
+
+The controller uses measured speed and current, plus the model parameters. It calculates acceleration algebraically; it does not differentiate sampled measurements. Position is the chosen output but does not appear in this cancellation law because the plant equations have no angle-dependent terms. Position feedback is a later tracking-controller step, Question 2(c).
+
+### New states and validity
+
+Use the output and its first two derivatives as the transformed coordinates:
+
+```math
+\boxed{z_1=\theta,\qquad z_2=\omega,\qquad
+z_3=\alpha=\frac{K_Ti_a-d_1\omega-d_2\omega|\omega|}{J}.}
+```
+
+They satisfy the linear chain
+
+```math
+\dot z_1=z_2,\qquad\dot z_2=z_3,\qquad\dot z_3=v,\qquad y=z_1.
+```
+
+The inverse transformation is
+
+```math
+\theta=z_1,\quad\omega=z_2,\quad
+i_a=\frac{Jz_3+d_1z_2+d_2z_2|z_2|}{K_T}.
+```
+
+The coordinate Jacobian determinant is $K_T/J=20\ne0$, and the input coefficient is $K_T/(JL_a)=400\ne0$. Thus the transformation and cancellation are globally defined for all finite states of this ideal model with the specified nonzero parameters. Relative degree equals the state dimension, so there are no remaining internal dynamics. Unlike the pendulum, there is no angle or speed at which the denominator vanishes.
+
+The drag function $\omega|\omega|$ is continuously differentiable, though not twice differentiable at zero. The derivative needed here exists and is zero there; the transformation is globally $C^1$ with a $C^1$ inverse. No division by speed or sign selection is needed at reversal. Higher-order smoothness is not claimed. Practical validity still depends on model accuracy, available speed/current feedback, and achievable voltage/current; this simulation supplies no hardware-limit evidence.
+
+### Simulink models, inputs and scopes
+
+The open-loop plant is [part1_dc_motor.slx](../simulink/part1_dc_motor.slx). Its [R2021a export](../simulink/part1_dc_motor_R2021a.slx) is supplied separately. Three Integrators store angle, speed and current. Two Fcn blocks implement the mechanical and electrical state derivatives. A passive algebraic observation calculates jerk from the physical acceleration and current derivative without affecting the state equations.
+
+![Open-loop DC motor model diagram export](figures/part1_dc_motor_diagram.png)
+
+![Nonlinear DC motor plant subsystem diagram export](figures/dc_motor_plant.png)
+
+The linearized model is [part1_dc_motor_linearization.slx](../simulink/part1_dc_motor_linearization.slx), with an [R2021a export](../simulink/part1_dc_motor_linearization_R2021a.slx). It copies the same plant subsystem and replaces the voltage source with the controller. The plant speed and current feed the controller; the virtual input $v$ is a jerk command in rad/s³.
+
+![Input-output linearization model diagram export](figures/part1_dc_motor_linearization_diagram.png)
+
+![Linearizing controller subsystem diagram export](figures/dc_motor_linearizing_controller.png)
+
+These are **diagram exports**, not actual UI screenshots. Double-click **Linearizing controller** to inspect **Acceleration from states** and **Linearizing voltage**. Both use ordinary Fcn blocks and explicitly ordered Mux inputs. No numerical Derivative block, saturation, or tracking controller is added.
+
+| Setting | Open-loop plant | Linearized plant |
+|---|---|---|
+| Initial states $[\theta,\omega,i_a]$ | $[0,0,0]$ | $[0,0,0]$ |
+| Input Step time | 0.2 s | 0.2 s |
+| Step before / after | 0 / 1 V | 0 / 1 rad/s³ |
+| Stop time | 2 s | 2 s |
+| Solver | `ode45`, variable step | Same |
+| Relative / absolute tolerance | $10^{-8}$ / $10^{-10}$ | Same |
+| Maximum step | 0.002 s | Same |
+
+Physical parameters and initial conditions live in each model workspace, so saved models run without an initialization callback. Open **Angle scope**, **Speed scope**, **Current scope**, **Acceleration scope**, **Jerk scope**, and **Voltage scope**. In the linearized model, **Jerk scope** compares actual jerk with $v$. For the default run, with $\tau=\max(t-0.2,0)$, the exact expected signals are $\theta=\tau^3/6$, $\omega=\tau^2/2$, and $\alpha=\tau$. At 2 s these are 0.972 rad, 1.62 rad/s and 1.8 rad/s². A nonzero jerk input produces growing motion: linearization by itself does not stabilize position.
+
+![Logged jerk comparison, position, voltage and separate speed-reversal case](figures/dc_motor_linearization_response.png)
+
+This figure contains **plots of logged simulation signals**, not Scope-window screenshots. Its last panel is a separate validation case that passes through zero speed. Diagnostic logging is enabled temporarily in memory and discarded; the saved answer models contain basic scopes. Raw recordings and numerical tables are stored under ignored `results/`.
+
+Reproduce from the repository as MATLAB's Current Folder:
+
+```matlab
+setup_project;
+build_dc_motor;
+build_dc_motor_linearization;
+validate_dc_motor;
+export_dc_motor_figures;
+open_system('part1_dc_motor_linearization');
+open_system('part1_dc_motor_linearization/Jerk scope');
+```
+
+Validation compares four physical-plant cases with independent ODE integration and seven linearized cases with analytical triple-integrator motion. It covers rest, both input signs, nonzero initial states/acceleration and speed reversal in both directions. Plant equations must match between the two models; actual jerk must match $v$ within $10^{-9}$ rad/s³, and analytical angle/speed/acceleration/current errors must stay below $2\times10^{-7}$ in their respective units. Each export is compared with its working model in the installed MATLAB release.
+
+All eleven cases passed in MATLAB/Simulink R2024b. The largest physical-state discrepancy against independent ODE integration was $8.38\times10^{-11}$ (rad, rad/s or A, rounded up). Across linearization cases, maximum angle, speed, acceleration and current errors were $2.21\times10^{-8}$ rad, $3.62\times10^{-8}$ rad/s, $2.97\times10^{-8}$ rad/s² and $6.01\times10^{-9}$ A, respectively (rounded up); the largest discrepancies occurred during speed reversal, where the drag has reduced smoothness. Maximum jerk discrepancy was $4.53\times10^{-14}$ rad/s³ (rounded up). The default run ended at the expected 0.972 rad, 1.62 rad/s and 1.8 rad/s², with peak voltage 0.81151 V. Both R2021a exports matched their working-model default trajectories when executed in R2024b; execution in R2021a remains unverified. No hardware validation is claimed.
