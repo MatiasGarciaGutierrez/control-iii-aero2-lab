@@ -119,6 +119,63 @@ open_system('part1_pendulum_linearization');
 open_system('part1_pendulum_linearization/Acceleration scope');
 ```
 
+## Part I — Question 1(c): stabilize upright in approximately one second
+
+After the cancellation from 1(b), the system is $\ddot\theta=v$. Choose a linear state-feedback law
+
+```math
+v=-k_p\theta-k_d\dot\theta.
+```
+
+The resulting equation is $\ddot\theta+k_d\dot\theta+k_p\theta=0$, whose characteristic polynomial is $s^2+k_ds+k_p$. Compare it with $s^2+2\zeta\omega_ns+\omega_n^2$. Choose critical damping ($\zeta=1$) and $\omega_n=6$ rad/s:
+
+```math
+(s+6)^2=s^2+12s+36,
+\qquad \boxed{k_p=36,\quad k_d=12,\quad v=-36\theta-12\dot\theta.}
+```
+
+Both poles are at $-6$, so the linearized origin $(\theta,\dot\theta)=(0,0)$ is asymptotically stable. For the specified initial angle $\theta_0=0.1$ rad and zero initial rate, the exact response is
+
+```math
+\theta(t)=0.1(1+6t)e^{-6t},
+\qquad\dot\theta(t)=-3.6te^{-6t}.
+```
+
+Use a **2% settling band relative to the initial angular error**, namely $|\theta|\le0.002$ rad for this run. Since the zero-rate response is monotonic, settling is found from $(1+6T_s)e^{-6T_s}=0.02$, yielding $T_s=0.97232$ s, approximately one second. The common approximation $T_s\approx4/(\zeta\omega_n)$ should not be used as the exact critically damped result: it omits the polynomial factor $(1+6t)$.
+
+The complete physical input, including the nonlinear cancellation, is
+
+```math
+u=\frac{-1.8\theta-0.55\dot\theta-0.981\sin\theta}{\cos\theta}.
+```
+
+Only $v$ is linear state feedback; $u$ remains nonlinear. The validity restrictions from 1(b) still apply. Stability of the double integrator establishes regulation of the exact nonlinear plant only while the state stays in a nonsingular operating region and the required input can be applied. For zero initial rate, the signed angle decays monotonically, so every initial angle strictly between $-\pi/2$ and $\pi/2$ stays in that interval under the ideal model. Arbitrary large initial rates do not have this guarantee. No actuator limit or hardware performance is inferred.
+
+### Simulink model and verification
+
+Open [part1_pendulum_regulation.slx](../simulink/part1_pendulum_regulation.slx), or its [R2021a export](../simulink/part1_pendulum_regulation_R2021a.slx). The Question 1(a) and 1(b) models remain available separately. The nonlinear plant and cancellation subsystems are reused from 1(b). The virtual-acceleration Step is replaced with **Linear state feedback**; its two inputs are the plant angle and rate.
+
+![Regulation model diagram export](figures/pendulum_regulation_diagram.png)
+
+![Linear state feedback subsystem diagram export](figures/pendulum_regulation_feedback.png)
+
+Inside **Linear state feedback**, two Gain blocks (`-Kp`, `-Kd`) and an addition implement $v=-36\theta-12\dot\theta$. Parameters `Kp=36`, `Kd=12`, `theta0=0.1`, and `omega0=0` live in the model workspace. The angle target is zero, so there is no external reference generator. Run for 2 s and open **Angle scope** to observe regulation, **Rate scope** for angular velocity, **Acceleration scope** to compare $v$ with actual acceleration, and **Input scope** for $u$. Solver settings are inherited from 1(b).
+
+![Logged regulation response with 2 percent settling band](figures/pendulum_regulation_response.png)
+
+The block figures are **diagram exports**; the response is a **plot of logged simulation signals**, not a Scope UI screenshot. Validation temporarily logs the simple model in memory, without saving diagnostic blocks. It compares seven cases with the analytical solution $\theta(t)=[\theta_0+(\dot\theta_0+6\theta_0)t]e^{-6t}$: signed nominal tilts, larger zero-rate tilts, nonzero initial rate and the exact origin. It checks cancellation, feedback gains, nominal settling, absence of zero-rate overshoot, singularity margin and exported dynamics. A nonzero initial rate can change settling time; the one-second specification is evaluated for the agreed zero-rate initial state.
+
+All seven cases passed in MATLAB/Simulink R2024b. For $[\theta_0,\dot\theta_0]=[0.1,0]$, the first recorded sample after permanent entry into the 2% band was at 0.97618 s, consistent with the exact 0.97232 s crossing and the 0.005 s maximum sampling gap. No overshoot was observed, and peak input magnitude was 0.27933 N m. Across all cases, maximum angle and rate discrepancies against the analytical solution were $1.37\times10^{-11}$ rad and $1.02\times10^{-10}$ rad/s, respectively (rounded up). Maximum cancellation residual was $1.43\times10^{-14}$ rad/s². The zero-rate $\pm1.3$ rad tests required 12.2814 N m peak magnitude, reinforcing that simulated mathematical validity does not establish actuator feasibility. The origin remained stationary. The R2021a export matched the default trajectory when executed in R2024b; execution in R2021a remains unverified. These are simulation results only.
+
+```matlab
+setup_project;
+build_pendulum_regulation;
+validate_pendulum_regulation;
+export_pendulum_regulation_figures;
+open_system('part1_pendulum_regulation');
+open_system('part1_pendulum_regulation/Angle scope');
+```
+
 ## Part II — AERO 2
 
 This report follows [Part II of the laboratory guide, pages 4–6](../course/Automatic_Control_III_Computer_Room_II.pdf). Questions 1–5 and the optional position-integral controller are implemented and simulated. Question 4 tests ideal motor tracking; Question 5 connects the IP motor loops to the supplied nonlinear plant. Hardware validation remains a later step requiring professor approval.

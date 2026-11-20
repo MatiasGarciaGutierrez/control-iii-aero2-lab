@@ -26,6 +26,10 @@ validate_pendulum_linearization;
 export_pendulum_linearization_figures;
 ```
 
+## Part I — Question 1(c)
+
+Open [part1_pendulum_regulation.slx](simulink/part1_pendulum_regulation.slx) and press Run. **Linear state feedback** computes $v=-36\theta-12\dot\theta$ ahead of the nonlinear cancellation controller. From the initial state `[0.1; 0]`, **Angle scope** shows critically damped convergence to upright, with a predicted 2% settling time of 0.9723 s. The [R2021a export](simulink/part1_pendulum_regulation_R2021a.slx) is included. Reproduce with `build_pendulum_regulation`, `validate_pendulum_regulation` and `export_pendulum_regulation_figures` after `setup_project`.
+
 ## Part II — Start with the simple question models
 
 | Activity | File to open in Simulink | Available views |
