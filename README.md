@@ -2,6 +2,8 @@
 
 Read the compiled [PDF report](report/lab2_report.pdf), or edit its [LaTeX source](report/main.tex). [Build instructions](report/README.md) cover PDF generation and evidence sources. Separate parts report Part I, Questions 1–3, and Part II, Questions 1–5, with optional integral action and outstanding experimental work.
 
+Part II position-control comparisons use the original 60 s course yaw/pitch references as their common baseline. Run `setup_project; validate_course_reference; export_course_reference_figures` to reproduce it across the ideal mechanics, full cascade, optional integral controller and HIL-free hardware surrogate. Custom steps and subsystem inputs are supplementary diagnostics.
+
 Parts I and II of the Automatic Control III laboratory. Develop and validate one question at a time, preserving the supplied course files.
 
 ## Part I — Question 1(a)

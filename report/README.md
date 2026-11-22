@@ -36,10 +36,14 @@ For the CSTR plot, run `setup_project; build_cstr; validate_cstr; export_cstr_fi
 
 To refresh Appendix A, run `setup_project; export_report_block_diagrams`. It exports the saved pendulum, motor and CSTR closed loops and cancellation subsystems, synchronizing `docs/figures/` and `report/images/` without modifying the models or rerunning simulations.
 
-Part II summarizes the implementation and measured simulation results documented in `../docs/report.md` and `../docs/hardware.md`. The complete ideal-sensor cascade settles in about 3.2 s; the filtered hardware-interface surrogate takes about 5.2 s and does not meet the 3 s target. Neither result constitutes physical experimental validation.
+Part II uses the original course yaw/pitch trajectory as the common baseline for every end-to-end position-controller comparison, including the optional integral controller and the HIL-free hardware surrogate. All use the same 60 s horizon, 2 ms reference samples, scaling and interpolation. The supplied measurement effects are included in the complete-cascade baseline; ideal-sensor runs provide a comparison. Separate motor-speed, acceleration, step-settling and disturbance tests are supplementary diagnostics. Step tests give about 3.2 s for the complete cascade and about 5.2 s for the filtered hardware surrogate; neither is a course-trajectory settling measurement or physical experimental result.
 
-To regenerate the two compact Part II plots from `motor_ip_validation.mat` and `cascade_control_validation.mat` and synchronize the six existing Part II diagram exports, run from the repository root:
+Run `setup_project; validate_course_reference; export_course_reference_figures` in MATLAB first. The baseline validation compares the generated reference against every sample from the original course initializer, checks the saved simple/experiment sources and 60 s duration, compares simple and diagnostic model outputs, and records ideal/noisy tracking and voltage metrics. Temporary logging is discarded without saving model changes; the actual QUARC model is never simulated.
+
+To regenerate the compact motor diagnostic and course-baseline plots, the report's tracking-results table and six diagram copies, run from the repository root:
 
 ```sh
 uv run --with matplotlib --with scipy python validation/export_part2_report_figures.py
 ```
+
+The exporter reads `motor_ip_validation.mat`, `course_reference_validation.mat` and `course_reference_metrics.csv`. The baseline figure uses recorded true plant angles; noisy sensor errors are reported separately in the raw metrics. The older `report_part2_cascade_comparison.png` is retained as supplementary step evidence and is not the report's baseline plot.

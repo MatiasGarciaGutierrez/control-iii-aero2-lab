@@ -42,4 +42,4 @@ For identical critically damped axes, the 2\% condition $(1+\lambda T_s)e^{-\lam
 \boxed{K_q=\lambda^2I_2=3.7816269I_2,\qquad
 D_q=2\lambda I_2=3.8892811I_2.}
 \end{equation}
-From rest, signed single-axis 0.1 rad steps and simultaneous $[0.2,0.1]^\mathsf{T}$ rad steps settle in 2.996 s without overshoot. The largest requested main/tail speeds are 178.56/298.00 rad/s. These results meet the approximately 3 s target under perfect motor tracking; finite motor bandwidth is included next.
+The primary comparison uses the original course trajectory (Question 5). For moving $q_d$, the error equation becomes $\ddot e+D_q\dot e+K_qe=\ddot q_d+D_q\dot q_d$, explaining the tracking lag without feedforward. Supplementary steps from rest settle in 2.996 s without overshoot, meeting the approximately 3 s target under perfect motor tracking.

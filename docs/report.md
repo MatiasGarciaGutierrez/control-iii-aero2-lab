@@ -239,9 +239,11 @@ The Scope audit checks all seven activity models and their exports in R2024b. Re
 
 The simulation comparisons and recovery generators remain in the experiment copies. Questions 4–5 and the optional controller default to the course trajectory. Validation explicitly selects the step, disturbance and recovery inputs used for the performance tables below. A separate [hardware-interface port](hardware.md) now connects Question 5 to the professor's QUARC interface. Its offline results include measurement-filter delay; actual hardware validation still requires professor review and laboratory checks.
 
-### Default course reference for position control
+### Common experimental baseline: original course reference
 
 **Pressing Run in Question 4, Question 5 or the optional model now runs the supplied 60 s angle trajectory.** Their saved experiment copies use the same default trajectory. Questions 1–2 retain motor-speed inputs, and Question 3 retains its virtual-acceleration input.
+
+This original trajectory is the primary baseline for every end-to-end position experiment, including the filtered offline hardware surrogate. Use the same time samples, scale, interpolation and initial rest state when comparing controllers. The supplied `meas_on=1` quantization/noise setting is included for complete cascades; ideal-measurement runs isolate other effects. Angle references cannot be applied directly as rotor-speed or acceleration commands. Those subsystem tests, custom steps and disturbance/recovery cases are supplementary diagnostics and are identified separately in the academic report.
 
 ![Course yaw and pitch sources inside Desired orientation](figures/course_reference_source.png)
 
@@ -254,6 +256,10 @@ Double-click **Desired orientation** in a simple position model. Its two **From 
 | Question 4: ideal motors | 0.09964 rad | 0.05981 rad |
 | Question 5: full motor cascade | 0.09941 rad | 0.05975 rad |
 | Optional position integral | 0.09956 rad | 0.05977 rad |
+
+With the course measurement effects enabled, the full IP cascade has true-angle RMS errors of 0.09945 rad yaw and 0.05969 rad pitch, with 6.91 V peak voltage. The optional integral cascade gives 0.09943/0.05970 rad and 7.67 V. Neither saturates. These values use the same complete 60 s course trajectory, not a selected step interval.
+
+![Common course baseline with ideal motors and the sensor-enabled cascade](figures/report_part2_course_baseline.png)
 
 These are RMS errors over the full 60 s trajectory. The small differences do not establish that one controller is better in general. All three show tracking lag with the existing position/rate feedback. The course's smoothing time `Tr` is a property of the desired trajectory; it is not the controller's settling time.
 
@@ -268,7 +274,7 @@ validate_course_reference;
 export_course_reference_figures;
 ```
 
-The reference check executes the original course initializer in an isolated function workspace and compares every generated sample, then verifies the delivered references and default trajectories. Original course files are not modified.
+The reference check executes the original course initializer in an isolated function workspace and compares every generated sample, including timestamp, axis order and scaling. It verifies the saved simple/experiment sources, interpolation and 60 s duration, compares their baseline responses using temporary logging, and records ideal/noisy true-angle errors separately from measured-angle errors. It also checks the HIL-free filtered surrogate on the identical trajectory. Original course files and saved models are not modified; no QUARC hardware model is executed. Raw baseline metrics and recordings are in `results/course_reference_metrics.csv` and `results/course_reference_validation.mat`.
 
 ## Preparation — Check the supplied simulator
 

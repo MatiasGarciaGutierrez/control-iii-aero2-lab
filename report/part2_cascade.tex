@@ -11,20 +11,12 @@ The motor controllers add two integral states. All gains are retained from the p
 \begin{equation}
 \ddot q-a=M_q^{-1}\Gamma\bigl[s(\omega)-s(\omega_d)\bigr].
 \end{equation}
-With ideal measurements, a 0.002 s integration step, zero initial states and reference steps at 0.2 s, the measured results are:
+Using the common 60 s course trajectory, the true-angle tracking results are:
+\input{course_baseline_results}
+RMS is evaluated over the full 60 s. The course trajectory is tracked without voltage saturation, but lag remains because desired-rate/acceleration feedforward is absent. Small RMS differences between controllers do not establish general superiority. The trajectory's smoothing constant $T_r$ is not the closed-loop settling time. Supplementary ideal-sensor step tests give 3.204--3.210 s settling, about 7\% above the 3 s target, without overshoot; these steps are used only to assess the settling specification.
 \begin{center}
-\begin{tabular}{lccc}
-\hline
-Reference step & Ideal motors: $T_s$ (s) & Full cascade: $T_s$ (s) & Peak $|v|$ (V)\\\hline
-Yaw $\pm0.1$ rad & 2.996 & 3.204 & 12.33\\
-Pitch $\pm0.1$ rad & 2.996 & 3.210 & 13.04\\
-Both $\pm[0.2,0.1]^\mathsf{T}$ rad & 2.996 & 3.206 / 3.210 & 21.76\\\hline
-\end{tabular}
-\end{center}
-Settling uses a band of $\pm2\%$ of each step amplitude. Motor dynamics increase settling by about 7\% relative to the 3 s target; the response has no overshoot or voltage saturation. With sensor noise/quantization, residual true-error RMS remains below 0.000440 rad in yaw and 0.001790 rad in pitch over 6--8 s. For the supplied 60 s moving reference, ideal-sensor tracking RMS is 0.09941/0.05975 rad (yaw/pitch); visible lag remains because desired-rate/acceleration feedforward is absent.
-\begin{center}
-\includegraphics[width=\linewidth]{report_part2_cascade_comparison.png}
-\reportcaption{Simulated simultaneous yaw/pitch steps with ideal rotor tracking and the complete IP motor cascade.}
+\includegraphics[width=\linewidth]{report_part2_course_baseline.png}
+\reportcaption{Original course yaw/pitch references and simulated tracking with ideal motors and the IP cascade using the supplied sensor effects.}
 \end{center}
 
 \subsection*{Optional: position integral action}
@@ -33,7 +25,7 @@ Add an acceleration-valued integral contribution $J$:
 \dot J=K_i^qe,\qquad a=K_p^q(bq_d-q)-K_d^q\dot q+J,
 \quad (K_p^q,K_d^q,K_i^q)=(3\lambda^2,3\lambda,\lambda^3)I_2,\quad b=\tfrac13.
 \end{equation}
-With $\lambda=1.9446406$ s$^{-1}$, the ideal reference transfer function reduces to $\lambda^2/(s+\lambda)^2$, preserving the nominal 3 s response. Both outer integrators pause during either motor's voltage saturation. Simulated settling is 3.042--3.050 s, with less than 0.025\% overshoot and 23.66 V peak voltage. Under constant unknown yaw/pitch torques of $+0.010/-0.008$ N\,m, the baseline PD errors are $-0.004166/+0.002953$ rad; integral action removes the steady offset in the ideal simulation, at the cost of reduced voltage margin.
+With $\lambda=1.9446406$ s$^{-1}$, the ideal reference transfer function reduces to $\lambda^2/(s+\lambda)^2$, preserving the nominal 3 s step response. Both outer integrators pause during either motor's voltage saturation. The same course trajectory gives the RMS errors shown above; integral action does not eliminate moving-reference lag. Supplementary steps settle in 3.042--3.050 s. Under constant unknown yaw/pitch torques of $+0.010/-0.008$ N\,m, supplementary constant-setpoint tests give PD errors of $-0.004166/+0.002953$ rad; integral action removes that steady offset in the ideal simulation.
 
 \subsection*{Experimental status and model differences}
-No physical AERO 2 measurements are available, so a simulation--experiment comparison, including the integral controller, cannot yet be established. The separate hardware-interface surrogate retains measurement filters and gives 5.220--5.222 s settling and 2.55--2.82\% overshoot. This offline result does not satisfy the 3 s target; rate-estimation delay affects damping feedback and nonlinear cancellation. Experimental validation remains pending professor review and physical calibration.
+No physical AERO 2 measurements are available, so a simulation--experiment comparison, including the integral controller, cannot yet be established. The HIL-free hardware-interface surrogate is also evaluated on the same course trajectory. Its supplementary steps give 5.220--5.222 s settling and 2.55--2.82\% overshoot, failing the 3 s target; rate-estimation delay affects damping feedback and nonlinear cancellation. Experimental validation remains pending professor review and physical calibration.
