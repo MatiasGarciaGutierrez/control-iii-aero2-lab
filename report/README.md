@@ -16,8 +16,8 @@ The generated PDF is `../results/latex-report/main.pdf`. Supporting build files 
 
 ## Evidence and regeneration
 
-- Question 1: existing pendulum implementation/validation at commit `02b69a9`, on `feature/part-i-pendulum-model` (PR #17). The nominal recorded 2% settling time is 0.976175 s; the mathematical prediction is 0.972320 s. No models from that branch are imported into this report change.
-- Question 2(a–b): motor implementation/validation at commit `3ec139c` (PR #18). Question 2(c–d) adds `build_dc_motor_tracking` and `validate_dc_motor_tracking` in the same PR.
+- Question 1: the pendulum implementation and evidence are integrated into `master` at `52010d1` through PR #17. The nominal recorded 2% settling time is 0.976175 s; the mathematical prediction is 0.972320 s. The models and validation scripts are available in this checkout.
+- Question 2: `build_dc_motor`, `build_dc_motor_linearization`, `build_dc_motor_tracking`, `validate_dc_motor`, and `validate_dc_motor_tracking` reproduce the plant, cancellation and tracking evidence delivered through PR #18.
 - Question 3: `build_cstr`, `validate_cstr` and `export_cstr_figures` reproduce the CSTR plant, input-output linearization, internal dynamics and temperature-step results. Time is in seconds, with an explicit factor of 1/60 on the course's minute-based rates. The reported ideal coolant demand is not a practical feasibility claim.
 - All reported simulations used R2024b. R2021a exports were checked in R2024b, not executed in R2021a. No hardware results are claimed.
 
