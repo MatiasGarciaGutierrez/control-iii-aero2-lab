@@ -1,6 +1,6 @@
 # Control III AERO 2 laboratory
 
-The concise LaTeX report starts at [report/main.tex](report/main.tex). [Build instructions](report/README.md) cover PDF generation and evidence sources. The first draft reports Part I, Questions 1 and 2; Part II will follow.
+The concise LaTeX report starts at [report/main.tex](report/main.tex). [Build instructions](report/README.md) cover PDF generation and evidence sources. The current draft reports Part I, Questions 1–3; Part II will follow.
 
 Parts I and II of the Automatic Control III laboratory. Develop and validate one question at a time, preserving the supplied course files.
 
@@ -182,3 +182,9 @@ export_dc_motor_figures;
 ```
 
 For Question 2(c–d), run `build_dc_motor_tracking` and `validate_dc_motor_tracking`. Open `simulink/part1_dc_motor_tracking.slx`: the reference steps from 0 to 0.1 rad at 0.05 s, and the third-order feedback targets approximately 0.2 s settling. The Angle scope compares the reference and measured position.
+
+## Part I — Question 3: non-isothermal CSTR
+
+Run `setup_project; build_cstr; validate_cstr; export_cstr_figures` in MATLAB. Open `simulink/part1_cstr.slx` for the nonlinear plant, `part1_cstr_linearization.slx` for virtual temperature-rate control, or `part1_cstr_tracking.slx` for the 310–330 K reference step. Each has an `_R2021a.slx` export. The saved models contain basic scopes; validation temporarily enables logging without saving it.
+
+The course parameters use minutes, while the simulation uses seconds. The plant explicitly divides the balance equations by 60. Temperature tracking targets a 5 s 2% settling time. Concentration is a stable internal state, with a 49.19 s time constant at 330 K. The approximately 1201 K initial coolant command is a consequence of ideal unconstrained cancellation and does not establish practical feasibility.

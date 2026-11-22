@@ -1,6 +1,6 @@
 # Control III laboratory report — Parts I and II
 
-The concise submission-style report is now maintained in [LaTeX](../report/main.tex), with [build and evidence instructions](../report/README.md). Its current draft covers Part I, Questions 1 and 2; the detailed implementation record below remains available.
+The concise submission-style report is now maintained in [LaTeX](../report/main.tex), with [build and evidence instructions](../report/README.md). Its current draft covers Part I, Questions 1–3; the detailed implementation record below remains available. Test counts and software compatibility checks are kept here rather than in the academic report.
 
 ## Part I — Question 1(a): nonlinear inverted pendulum
 
@@ -1328,4 +1328,35 @@ setup_project;
 build_dc_motor_tracking;
 validate_dc_motor_tracking;
 open_system('part1_dc_motor_tracking');
+```
+
+## Part I — Question 3: non-isothermal CSTR
+
+Let $\kappa(T)=7.2\times10^{10}e^{-8750/T}$ min$^{-1}$. In seconds the state equations are $\dot C_A=[1-C_A-\kappa(T)C_A]/60$ and $\dot T=[350-2T+200\kappa(T)C_A+T_c]/60$. The factor of 60 is essential: the guide asks for a 5-second transient despite giving minute-based rates. Output $T$ has relative degree one, and $T_c=60v-350+2T-200\kappa(T)C_A$ yields $\dot T=v$. No numerical differentiation is used.
+
+New coordinates are $z_1=T$, $\eta=C_A$. The map is an invertible permutation; the input coefficient is the nonzero constant $1/60$. The law is defined for physical temperatures $T>0$ and nonnegative concentration; actual operation additionally requires feasible coolant commands. With $T=330$ K, the shifted zero dynamics are $\dot\eta=(1-1.219759929\eta)/60$. Their unique equilibrium is 0.819833457 mol/L, with pole $-0.020329332$ s$^{-1}$ and time constant 49.19 s, so the internal state is stable.
+
+Choose $v=K(T_d-T)$ with $K=\ln50/5=0.782404601$ s$^{-1}$. The exact 2% temperature settling time is 5 s. Initial conditions are the 310 K equilibrium: $C_A=0.961796454$ mol/L, $T_c=262.359291$ K. The desired temperature steps from 310 to 330 K at 1 s. Default simulation time is 180 s to observe the slower concentration dynamics; `ode45` uses maximum step 0.02 s and tolerances $10^{-8}/10^{-10}$.
+
+The simple models are `part1_cstr.slx`, `part1_cstr_linearization.slx`, and `part1_cstr_tracking.slx`. The tracking model adds a reference-error Sum and a Gain ahead of the nonlinear cancellation. Temperature scope compares desired/actual temperature; Temperature rate scope compares $v$ and actual rate; Concentration scope and Coolant scope monitor the internal state and applied input. Exports target R2021a; actual R2021a execution remains unverified.
+
+![CSTR tracking model diagram export](figures/cstr_tracking_diagram.png)
+
+![CSTR nonlinear cancellation subsystem diagram export](figures/cstr_linearizing_controller.png)
+
+These are diagram exports, not UI screenshots. The academic report uses the following plots of logged simulation signals:
+
+![CSTR temperature, concentration and coolant command](figures/report_cstr_response.png)
+
+`validate_cstr` compares the physical plant with an independently integrated two-state ODE; signed virtual inputs with exact linear temperature motion; tracking with the exact first-order transient; and the internal state with an independently integrated concentration equation. A separate constant-330 K test checks the analytical zero-dynamics solution. Model/export default trajectories are compared in R2024b. Diagnostic logging is enabled only in memory and discarded; raw data stay in ignored `results/`.
+
+The initial step requires $T_c\approx1201$ K in the unconstrained model. This is a material limitation of the requested fast transient, not a demonstrated coolant operating condition. Concentration settling is not required to take 5 s, and its slow convergence must not be confused with failure of the temperature specification.
+
+In R2024b, the nominal sampled 2% settling time is 5.02 s, consistent with the exact 5 s crossing and maximum output spacing 0.02 s. There is no overshoot; nominal peak coolant is 1201.245 K and concentration at 180 s is 0.82370 mol/L. Two open-loop, two virtual-rate and five closed-loop/internal-dynamics cases passed, including the analytical shifted zero-dynamics solution. Maximum tracking-temperature discrepancy is below $2\times10^{-12}$ K; the concentration comparison is below $2.2\times10^{-14}$ mol/L. All three exports matched their working-model default dynamics in R2024b. These software-check details are deliberately excluded from the academic LaTeX text.
+
+```matlab
+setup_project;
+build_cstr;
+validate_cstr;
+export_cstr_figures;
 ```

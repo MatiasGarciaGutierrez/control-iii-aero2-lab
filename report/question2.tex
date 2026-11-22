@@ -36,9 +36,9 @@ The error $e=r-\theta$ satisfies $e^{(3)}+k_3\ddot e+k_2\dot e+k_1e=0$. Set
 For a reference step from rest, $e(t)/e(0)=e^{-38t}[1+38t+(38t)^2/2]$. Its 2\% settling time is approximately 0.198 s. For a smooth moving reference, add $r^{(3)}+k_3\ddot r+k_2\dot r$ to this control law.
 
 \answer{(d) Closed-loop simulation}
-The model \texttt{part1\_dc\_motor\_tracking.slx} connects the linear tracking law to the nonlinear cancellation and the original motor plant. Acceleration is calculated from speed/current; no numerical differentiation is used. From zero state, the reference steps to 0.1 rad at 0.05 s. Run for 0.5 s with \texttt{ode45}, maximum step 0.0005 s and tolerances $10^{-8}/10^{-10}$. The Angle scope compares reference/output; Jerk scope compares $v$ and actual jerk.
+The tracking law and nonlinear cancellation are applied to the original motor plant. Acceleration is calculated from speed and current. From zero state, the reference steps to 0.1 rad at 0.05 s. The simulation runs for 0.5 s using \texttt{ode45}, maximum step 0.0005 s and relative/absolute tolerances $10^{-8}/10^{-10}$.
 \begin{center}
 \includegraphics[width=\linewidth]{report_dc_motor_tracking.png}
-\reportcaption{Logged closed-loop tracking and applied voltage. Settling time is measured from the reference step.}
+\reportcaption{Simulated position tracking and applied voltage. Settling time is measured from the reference step.}
 \end{center}
 \input{motor_results}

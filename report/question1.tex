@@ -31,9 +31,9 @@ $\boxed{\text{Linear state feedback}}\xrightarrow{v}
 \boxed{\text{Pendulum}}$\\[2pt]
 \small Measured $\theta,\dot\theta$ feed both controllers.
 \end{center}
-The simple model is \texttt{part1\_pendulum\_regulation.slx}. Run for 2 s using \texttt{ode45}, maximum step 0.005 s, relative/absolute tolerances $10^{-8}/10^{-10}$. The Angle, Rate, Acceleration and Input scopes observe the loop.
+The nonlinear closed loop is simulated for 2 s using \texttt{ode45}, maximum step 0.005 s and relative/absolute tolerances $10^{-8}/10^{-10}$.
 \begin{center}
 \includegraphics[width=\linewidth]{report_pendulum_response.png}
-\reportcaption{Logged simulation signals; the dashed band is $\pm0.002$ rad. The schematic above is explanatory, not a UI screenshot.}
+\reportcaption{Simulated angular position and control input. The dashed band is $\pm0.002$ rad.}
 \end{center}
-The sampled 2\% settling time is \textbf{0.9762 s}, satisfying the approximate 1 s requirement. Peak $|u|=0.2793$ N\,m. Seven validation cases passed; the largest angle discrepancy from the analytical response was $1.37\times10^{-11}$ rad. These results assume exact cancellation and unconstrained input; no hardware test is claimed.
+The sampled 2\% settling time is \textbf{0.9762 s}, satisfying the approximate 1 s requirement, with no overshoot. Peak $|u|=0.2793$ N\,m. The response agrees with the analytical prediction under exact cancellation and unconstrained input.
