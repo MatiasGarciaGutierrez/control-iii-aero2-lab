@@ -1,12 +1,12 @@
 \section*{Question 2 --- DC motor with quadratic drag}
 \answer{(a) State-space model}
-With $x=[\theta,\omega,i_a]^\mathsf{T}$, armature voltage $u$ and $y=\theta$,
+Let $x_1=\theta$, $x_2=\omega=\dot\theta$ and $x_3=i_a$, with armature voltage $u$ and output $y=\theta$. Then
 \begin{equation}
-\begin{aligned}
-\dot x_1&=x_2,\\
-\dot x_2&=20x_3-x_2-\tfrac12x_2|x_2|,\\
-\dot x_3&=-4x_2-40x_3+20u.
-\end{aligned}
+x=\begin{bmatrix}\theta\\\omega\\i_a\end{bmatrix},\qquad
+\boxed{\dot x=
+\begin{bmatrix}x_2\\20x_3-x_2-\tfrac12x_2|x_2|\\-4x_2-40x_3\end{bmatrix}
++\begin{bmatrix}0\\0\\20\end{bmatrix}u},\qquad
+y=\begin{bmatrix}1&0&0\end{bmatrix}x.
 \end{equation}
 The Simulink plant has three Integrators and separate mechanical/electrical equations; the closed-loop block diagram is shown in Appendix~A.
 

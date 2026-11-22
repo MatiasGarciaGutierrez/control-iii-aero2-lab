@@ -1,9 +1,12 @@
 \section*{Question 1 --- Inverted pendulum}
 \answer{(a) State-space model}
-With $x=[\theta,\dot\theta]^\mathsf{T}$, input $u$ and output $y=\theta$,
+Let $x_1=\theta$, $x_2=\dot\theta$, with input $u$ and output $y=\theta$. Then
 \begin{equation}
- \dot x_1=x_2,\qquad
- \dot x_2=19.62\sin x_1-x_2+20\cos x_1\,u,\qquad y=x_1.
+ x=\begin{bmatrix}\theta\\\dot\theta\end{bmatrix},\qquad
+ \boxed{\dot x=
+ \begin{bmatrix}x_2\\19.62\sin x_1-x_2\end{bmatrix}
+ +\begin{bmatrix}0\\20\cos x_1\end{bmatrix}u},\qquad
+ y=\begin{bmatrix}1&0\end{bmatrix}x.
 \end{equation}
 The Simulink plant uses two Integrators and the gravity, friction and input terms above. Initial state: $x(0)=[0.1,0]^\mathsf{T}$ (rad, rad/s).
 

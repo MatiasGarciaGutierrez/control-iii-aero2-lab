@@ -2,8 +2,11 @@
 \answer{(a) State-space model}
 Let $x_1=C_A$ (mol/L), $x_2=T$ (K), $u=T_c$ (K), and $\kappa(T)=7.2\times10^{10}e^{-8750/T}$ (min$^{-1}$). Using seconds as the time unit, the supplied balances become
 \begin{equation}
-\boxed{\dot x_1=\frac{1-x_1-\kappa(x_2)x_1}{60},\qquad
-\dot x_2=\frac{350-2x_2+200\kappa(x_2)x_1+u}{60}.}
+x=\begin{bmatrix}C_A\\T\end{bmatrix},\qquad
+\boxed{\dot x=\frac{1}{60}
+\begin{bmatrix}1-x_1-\kappa(x_2)x_1\\350-2x_2+200\kappa(x_2)x_1\end{bmatrix}
++\begin{bmatrix}0\\1/60\end{bmatrix}u},\qquad
+y=\begin{bmatrix}0&1\end{bmatrix}x.
 \end{equation}
 The factor $1/60$ converts the guide's minute-based rates to seconds. The nonlinear plant integrates concentration and temperature separately.
 
