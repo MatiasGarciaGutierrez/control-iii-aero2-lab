@@ -1,0 +1,19 @@
+function export_report_block_diagrams
+%EXPORT_REPORT_BLOCK_DIAGRAMS Export saved Simulink models without modifying them.
+project = setup_project;
+items = {'part1_pendulum_regulation','', 'pendulum_regulation_diagram.png'; ...
+    'part1_pendulum_linearization','Linearizing controller','pendulum_linearization_controller.png'; ...
+    'part1_dc_motor_tracking','','dc_motor_tracking_diagram.png'; ...
+    'part1_dc_motor_linearization','Linearizing controller','dc_motor_linearizing_controller.png'; ...
+    'part1_cstr_tracking','','cstr_tracking_diagram.png'; ...
+    'part1_cstr_tracking','Linearizing controller','cstr_linearizing_controller.png'};
+for index = 1:size(items,1)
+    model = items{index,1};load_system(fullfile(project.simulink,[model '.slx']));
+    system = model;
+    if ~isempty(items{index,2}),system = [system '/' items{index,2}];end
+    destination = fullfile(project.docs,'figures',items{index,3});
+    print(['-s' system],'-dpng','-r180',destination);
+    copyfile(destination,fullfile(project.root,'report','images',items{index,3}));
+    close_system(model,0);
+end
+end

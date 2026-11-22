@@ -4,7 +4,7 @@ Open this folder in Codex's LaTeX editor, or edit `main.tex`. The draft contains
 
 The compiled [PDF report](lab2_report.pdf) is committed alongside the LaTeX sources for viewing directly on GitHub. Regenerate it whenever the report sources or figures change.
 
-The report is split by question, with short motor/CSTR results paragraphs. Its academic text contains equations, methods and control-performance findings; software test counts and export compatibility details belong in repository documentation. Selected evidence remains in `../docs/figures/`; matching copies in `images/` make this LaTeX project self-contained for the live preview, which cannot read outside its project folder. Raw MATLAB recordings remain in ignored `../results/`. Figures are plots of logged data or explanatory schematics, not screenshots.
+The report is split by question, with short motor/CSTR results paragraphs. The title lists Matías García and Snoeijink Lars. Its academic text contains equations, methods and control-performance findings; software test counts and export compatibility details belong in repository documentation. Appendix A contains actual Simulink diagram exports of each closed loop and its nonlinear cancellation subsystem. Selected evidence remains in `../docs/figures/`; matching copies in `images/` make this LaTeX project self-contained for the live preview, which cannot read outside its project folder. Raw MATLAB recordings remain in ignored `../results/`. Diagrams are model exports and plots are logged signals, not UI screenshots.
 
 ## Build
 
@@ -33,3 +33,5 @@ uv run --with matplotlib --with scipy python validation/export_latex_report_figu
 Run that command from the repository root. It reads logged samples from the two MAT recordings and updates both the selected evidence and the report's local image copies; it does not substitute analytical curves for simulation data.
 
 For the CSTR plot, run `setup_project; build_cstr; validate_cstr; export_cstr_figures` in MATLAB. The exporter synchronizes the selected evidence and the local LaTeX image.
+
+To refresh Appendix A, run `setup_project; export_report_block_diagrams`. It exports the saved pendulum, motor and CSTR closed loops and cancellation subsystems, synchronizing `docs/figures/` and `report/images/` without modifying the models or rerunning simulations.
