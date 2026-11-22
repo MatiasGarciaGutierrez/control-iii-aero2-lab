@@ -1,5 +1,7 @@
 # Control III AERO 2 laboratory
 
+The concise LaTeX report starts at [report/main.tex](report/main.tex). [Build instructions](report/README.md) cover PDF generation and evidence sources. The current draft reports Part I, Questions 1–3; Part II will follow.
+
 Parts I and II of the Automatic Control III laboratory. Develop and validate one question at a time, preserving the supplied course files.
 
 ## Part I — Question 1(a)
@@ -164,3 +166,25 @@ The five files under `course/` remain byte-identical to the `course-baseline` ta
 4. Merge only when requested, using squash, then remove the source branch.
 
 Fetch and recheck target freshness before opening or merging a PR. Rebase only short-lived branches when needed and publish rebases with `--force-with-lease`. Never rebase or force-push `master`. Check current branch protection in GitHub settings; the existing local pre-push hook is checkout-specific and is not copied by cloning.
+
+## Part I — Question 2: nonlinear DC motor
+
+Open [part1_dc_motor.slx](simulink/part1_dc_motor.slx) for the nonlinear plant from 2(a), or [part1_dc_motor_linearization.slx](simulink/part1_dc_motor_linearization.slx) for the input-output linearizing controller from 2(b). These are separate from the Part II AERO 2 motors. Both include matching `_R2021a.slx` exports.
+
+The linearizing model starts at zero state and applies a virtual jerk step from 0 to 1 rad/s³ at 0.2 s. Press Run and open **Jerk scope**: actual jerk and virtual input should overlap. **Linearizing controller** computes voltage from speed, current and the virtual input; no numerical differentiation is needed. Position tracking and stabilization are left for 2(c). The [report](docs/report.md#part-i--question-2ab-dc-motor-with-quadratic-drag) derives the law, transformed states and validity range.
+
+```matlab
+setup_project;
+build_dc_motor;
+build_dc_motor_linearization;
+validate_dc_motor;
+export_dc_motor_figures;
+```
+
+For Question 2(c–d), run `build_dc_motor_tracking` and `validate_dc_motor_tracking`. Open `simulink/part1_dc_motor_tracking.slx`: the reference steps from 0 to 0.1 rad at 0.05 s, and the third-order feedback targets approximately 0.2 s settling. The Angle scope compares the reference and measured position.
+
+## Part I — Question 3: non-isothermal CSTR
+
+Run `setup_project; build_cstr; validate_cstr; export_cstr_figures` in MATLAB. Open `simulink/part1_cstr.slx` for the nonlinear plant, `part1_cstr_linearization.slx` for virtual temperature-rate control, or `part1_cstr_tracking.slx` for the 310–330 K reference step. Each has an `_R2021a.slx` export. The saved models contain basic scopes; validation temporarily enables logging without saving it.
+
+The course parameters use minutes, while the simulation uses seconds. The plant explicitly divides the balance equations by 60. Temperature tracking targets a 5 s 2% settling time. Concentration is a stable internal state, with a 49.19 s time constant at 330 K. The approximately 1201 K initial coolant command is a consequence of ideal unconstrained cancellation and does not establish practical feasibility.

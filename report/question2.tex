@@ -1,0 +1,44 @@
+\section*{Question 2 --- DC motor with quadratic drag}
+\answer{(a) State-space model}
+With $x=[\theta,\omega,i_a]^\mathsf{T}$, armature voltage $u$ and $y=\theta$,
+\begin{equation}
+\begin{aligned}
+\dot x_1&=x_2,\\
+\dot x_2&=20x_3-x_2-\tfrac12x_2|x_2|,\\
+\dot x_3&=-4x_2-40x_3+20u.
+\end{aligned}
+\end{equation}
+The Simulink plant has three Integrators and separate mechanical/electrical equations.
+
+\answer{(b) Input-output linearization, new states and validity}
+Let $\alpha=20i_a-\omega-\tfrac12\omega|\omega|$. Differentiating the output gives
+\begin{equation}
+\dot y=\omega,\quad\ddot y=\alpha,\quad
+y^{(3)}=-80\omega-800i_a-(1+|\omega|)\alpha+400u.
+\end{equation}
+Here $\frac{d}{d\omega}(\omega|\omega|)=2|\omega|$, also at zero. Hence
+\begin{equation}
+\boxed{u=\frac{v+80\omega+800i_a+(1+|\omega|)\alpha}{400}}
+\quad\Longrightarrow\quad y^{(3)}=v.
+\end{equation}
+Choose $z=[\theta,\omega,\alpha]^\mathsf{T}$; then $\dot z_1=z_2$, $\dot z_2=z_3$, $\dot z_3=v$. The inverse is $i_a=(z_3+z_2+\tfrac12z_2|z_2|)/20$. The input coefficient $400$ and coordinate Jacobian determinant $20$ never vanish: the law is globally defined for finite states of the ideal model, including speed reversal. The transformation is $C^1$; there are no internal dynamics.
+
+\answer{(c) Reference tracking: approximately 0.2 s settling}
+For a constant reference $r=\theta_d$, choose
+\begin{equation}
+v=k_1(r-z_1)-k_2z_2-k_3z_3.
+\end{equation}
+The error $e=r-\theta$ satisfies $e^{(3)}+k_3\ddot e+k_2\dot e+k_1e=0$. Set
+\begin{equation}
+(s+38)^3=s^3+114s^2+4332s+54872,
+\quad\boxed{k_1=54872,\ k_2=4332,\ k_3=114.}
+\end{equation}
+For a reference step from rest, $e(t)/e(0)=e^{-38t}[1+38t+(38t)^2/2]$. Its 2\% settling time is approximately 0.198 s. For a smooth moving reference, add $r^{(3)}+k_3\ddot r+k_2\dot r$ to this control law.
+
+\answer{(d) Closed-loop simulation}
+The tracking law and nonlinear cancellation are applied to the original motor plant. Acceleration is calculated from speed and current. From zero state, the reference steps to 0.1 rad at 0.05 s. The simulation runs for 0.5 s using \texttt{ode45}, maximum step 0.0005 s and relative/absolute tolerances $10^{-8}/10^{-10}$.
+\begin{center}
+\includegraphics[width=\linewidth]{report_dc_motor_tracking.png}
+\reportcaption{Simulated position tracking and applied voltage. Settling time is measured from the reference step.}
+\end{center}
+\input{motor_results}

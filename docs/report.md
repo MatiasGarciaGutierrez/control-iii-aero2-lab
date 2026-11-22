@@ -1,5 +1,7 @@
 # Control III laboratory report — Parts I and II
 
+The concise submission-style report is now maintained in [LaTeX](../report/main.tex), with [build and evidence instructions](../report/README.md). Its current draft covers Part I, Questions 1–3; the detailed implementation record below remains available. Test counts and software compatibility checks are kept here rather than in the academic report.
+
 ## Part I — Question 1(a): nonlinear inverted pendulum
 
 Reference: the laboratory guide, page 2, Question 1(a). The angle is measured from the **upright** vertical. The cart dynamics are excluded by the exercise's assumption.
@@ -1187,3 +1189,174 @@ The 60 s course-reference test gives RMS tracking error 0.09795 rad yaw and 0.05
 The hardware model includes angle, velocity, acceleration, rotor-speed, voltage and error Scopes. Its acceleration traces are sampled-difference estimates, unlike the exact derivative signals available in the simulated course plant. The template's main/tail speed output labels were reversed relative to its controller routing; the adapted labels identify motor 0/main and motor 1/tail. Physical assignment, polarity, encoder calibration and operating limits still need checking on the rig.
 
 See [Hardware implementation and offline evidence](hardware.md) for the exact file to open, channel table, gains, Scope connections and commands. `validate_hardware_cascade` saves the repeatable results under `results/hardware_cascade/`; its `TimingMet` column explicitly records the failed timing criterion.
+
+## Part I — Question 2(a–b): DC motor with quadratic drag
+
+Reference: [laboratory guide, page 2](../course/Automatic_Control_III_Computer_Room_II.pdf). This motor is a separate theoretical plant, not the Part II AERO 2 motor model.
+
+### State-space model and output derivatives
+
+Choose $x_1=\theta$, $x_2=\omega=\dot\theta$, $x_3=i_a$. The input $u$ is armature voltage and the output is $y=\theta$. With the given parameters,
+
+```math
+\dot x_1=x_2,\qquad
+\dot x_2=20x_3-x_2-0.5x_2|x_2|,\qquad
+\dot x_3=-4x_2-40x_3+20u.
+```
+
+Differentiate the output until the voltage appears:
+
+```math
+y=x_1,\qquad \dot y=x_2,\qquad
+\ddot y=\alpha=20x_3-x_2-0.5x_2|x_2|.
+```
+
+The voltage has not yet appeared explicitly. Since $\frac{d}{d\omega}(\omega|\omega|)=2|\omega|$ (including at zero), another derivative gives
+
+```math
+y^{(3)}=20\dot x_3-(1+|x_2|)\dot x_2
+=\underbrace{-80x_2-800x_3-(1+|x_2|)\alpha}_{a(x)}+\underbrace{400}_{b(x)}u.
+```
+
+The relative degree is $r=3$. The physical motor input sets the third position derivative (angular jerk), rather than directly setting acceleration as in the pendulum.
+
+### Input-output linearizing voltage
+
+Impose $y^{(3)}=v$ and solve for $u$:
+
+```math
+\boxed{u=\frac{v+80x_2+800x_3+(1+|x_2|)\alpha}{400},\quad
+\alpha=20x_3-x_2-0.5x_2|x_2|.}
+```
+
+For clarity, the symbolic physical-parameter form is
+
+```math
+u=\frac{JL_a}{K_T}v+R_ai_a+K_e\omega
++\frac{L_a}{K_T}(d_1+2d_2|\omega|)\alpha,
+\qquad \alpha=\frac{K_Ti_a-d_1\omega-d_2\omega|\omega|}{J}.
+```
+
+The controller uses measured speed and current, plus the model parameters. It calculates acceleration algebraically; it does not differentiate sampled measurements. Position is the chosen output but does not appear in this cancellation law because the plant equations have no angle-dependent terms. Position feedback is a later tracking-controller step, Question 2(c).
+
+### New states and validity
+
+Use the output and its first two derivatives as the transformed coordinates:
+
+```math
+\boxed{z_1=\theta,\qquad z_2=\omega,\qquad
+z_3=\alpha=\frac{K_Ti_a-d_1\omega-d_2\omega|\omega|}{J}.}
+```
+
+They satisfy the linear chain
+
+```math
+\dot z_1=z_2,\qquad\dot z_2=z_3,\qquad\dot z_3=v,\qquad y=z_1.
+```
+
+The inverse transformation is
+
+```math
+\theta=z_1,\quad\omega=z_2,\quad
+i_a=\frac{Jz_3+d_1z_2+d_2z_2|z_2|}{K_T}.
+```
+
+The coordinate Jacobian determinant is $K_T/J=20\ne0$, and the input coefficient is $K_T/(JL_a)=400\ne0$. Thus the transformation and cancellation are globally defined for all finite states of this ideal model with the specified nonzero parameters. Relative degree equals the state dimension, so there are no remaining internal dynamics. Unlike the pendulum, there is no angle or speed at which the denominator vanishes.
+
+The drag function $\omega|\omega|$ is continuously differentiable, though not twice differentiable at zero. The derivative needed here exists and is zero there; the transformation is globally $C^1$ with a $C^1$ inverse. No division by speed or sign selection is needed at reversal. Higher-order smoothness is not claimed. Practical validity still depends on model accuracy, available speed/current feedback, and achievable voltage/current; this simulation supplies no hardware-limit evidence.
+
+### Simulink models, inputs and scopes
+
+The open-loop plant is [part1_dc_motor.slx](../simulink/part1_dc_motor.slx). Its [R2021a export](../simulink/part1_dc_motor_R2021a.slx) is supplied separately. Three Integrators store angle, speed and current. Two Fcn blocks implement the mechanical and electrical state derivatives. A passive algebraic observation calculates jerk from the physical acceleration and current derivative without affecting the state equations.
+
+![Open-loop DC motor model diagram export](figures/part1_dc_motor_diagram.png)
+
+![Nonlinear DC motor plant subsystem diagram export](figures/dc_motor_plant.png)
+
+The linearized model is [part1_dc_motor_linearization.slx](../simulink/part1_dc_motor_linearization.slx), with an [R2021a export](../simulink/part1_dc_motor_linearization_R2021a.slx). It copies the same plant subsystem and replaces the voltage source with the controller. The plant speed and current feed the controller; the virtual input $v$ is a jerk command in rad/s³.
+
+![Input-output linearization model diagram export](figures/part1_dc_motor_linearization_diagram.png)
+
+![Linearizing controller subsystem diagram export](figures/dc_motor_linearizing_controller.png)
+
+These are **diagram exports**, not actual UI screenshots. Double-click **Linearizing controller** to inspect **Acceleration from states** and **Linearizing voltage**. Both use ordinary Fcn blocks and explicitly ordered Mux inputs. No numerical Derivative block, saturation, or tracking controller is added.
+
+| Setting | Open-loop plant | Linearized plant |
+|---|---|---|
+| Initial states $[\theta,\omega,i_a]$ | $[0,0,0]$ | $[0,0,0]$ |
+| Input Step time | 0.2 s | 0.2 s |
+| Step before / after | 0 / 1 V | 0 / 1 rad/s³ |
+| Stop time | 2 s | 2 s |
+| Solver | `ode45`, variable step | Same |
+| Relative / absolute tolerance | $10^{-8}$ / $10^{-10}$ | Same |
+| Maximum step | 0.002 s | Same |
+
+Physical parameters and initial conditions live in each model workspace, so saved models run without an initialization callback. Open **Angle scope**, **Speed scope**, **Current scope**, **Acceleration scope**, **Jerk scope**, and **Voltage scope**. In the linearized model, **Jerk scope** compares actual jerk with $v$. For the default run, with $\tau=\max(t-0.2,0)$, the exact expected signals are $\theta=\tau^3/6$, $\omega=\tau^2/2$, and $\alpha=\tau$. At 2 s these are 0.972 rad, 1.62 rad/s and 1.8 rad/s². A nonzero jerk input produces growing motion: linearization by itself does not stabilize position.
+
+![Logged jerk comparison, position, voltage and separate speed-reversal case](figures/dc_motor_linearization_response.png)
+
+This figure contains **plots of logged simulation signals**, not Scope-window screenshots. Its last panel is a separate validation case that passes through zero speed. Diagnostic logging is enabled temporarily in memory and discarded; the saved answer models contain basic scopes. Raw recordings and numerical tables are stored under ignored `results/`.
+
+Reproduce from the repository as MATLAB's Current Folder:
+
+```matlab
+setup_project;
+build_dc_motor;
+build_dc_motor_linearization;
+validate_dc_motor;
+export_dc_motor_figures;
+open_system('part1_dc_motor_linearization');
+open_system('part1_dc_motor_linearization/Jerk scope');
+```
+
+Validation compares four physical-plant cases with independent ODE integration and seven linearized cases with analytical triple-integrator motion. It covers rest, both input signs, nonzero initial states/acceleration and speed reversal in both directions. Plant equations must match between the two models; actual jerk must match $v$ within $10^{-9}$ rad/s³, and analytical angle/speed/acceleration/current errors must stay below $2\times10^{-7}$ in their respective units. Each export is compared with its working model in the installed MATLAB release.
+
+All eleven cases passed in MATLAB/Simulink R2024b. The largest physical-state discrepancy against independent ODE integration was $8.38\times10^{-11}$ (rad, rad/s or A, rounded up). Across linearization cases, maximum angle, speed, acceleration and current errors were $2.21\times10^{-8}$ rad, $3.62\times10^{-8}$ rad/s, $2.97\times10^{-8}$ rad/s² and $6.01\times10^{-9}$ A, respectively (rounded up); the largest discrepancies occurred during speed reversal, where the drag has reduced smoothness. Maximum jerk discrepancy was $4.53\times10^{-14}$ rad/s³ (rounded up). The default run ended at the expected 0.972 rad, 1.62 rad/s and 1.8 rad/s², with peak voltage 0.81151 V. Both R2021a exports matched their working-model default trajectories when executed in R2024b; execution in R2021a remains unverified. No hardware validation is claimed.
+
+### Question 2(c–d): linear tracking control and closed-loop validation
+
+For a constant reference $r$, use $v=54872(r-\theta)-4332\omega-114\alpha$. The error polynomial is $(s+38)^3$, so all three poles are stable at $-38$. For a step from rest, the relative error is $e^{-38t}[1+38t+(38t)^2/2]$. Its exact 2% crossing is approximately 0.198 s. A smooth moving reference additionally requires its first, second and third derivatives in the feedforward law; the saved model tests piecewise constant setpoints.
+
+The simple model [part1_dc_motor_tracking.slx](../simulink/part1_dc_motor_tracking.slx) preserves the motor plant and nonlinear cancellation, adding **Linear tracking control** and **Angle reference**. It computes acceleration from speed/current to avoid an artificial direct-feedthrough dependency through the grouped plant input. No numerical differentiation, delay, saturation or integrator reset is introduced. Angle scope compares the reference/output; Jerk scope compares actual jerk and virtual input. Initial states are zero; the reference steps from 0 to 0.1 rad at 0.05 s. Run for 0.5 s with `ode45`, maximum step 0.0005 s, and the existing $10^{-8}/10^{-10}$ tolerances.
+
+![Logged motor tracking response and voltage](figures/report_dc_motor_tracking.png)
+
+This is a plot of logged simulation signals, not a Scope screenshot. The sampled nominal 2% settling time is approximately 0.198 s with no overshoot; peak voltage is 13.718 V. Six cases cover positive/negative steps, larger steps, nonzero initial states and equilibrium. The analytical third-order transient, nonlinear cancellation and R2021a-export dynamics are checked in R2024b. A 0.2 rad step requires 27.436 V peak in this ideal model; actuator feasibility is not established. Actual execution in R2021a and hardware validation remain unverified.
+
+```matlab
+setup_project;
+build_dc_motor_tracking;
+validate_dc_motor_tracking;
+open_system('part1_dc_motor_tracking');
+```
+
+## Part I — Question 3: non-isothermal CSTR
+
+Let $\kappa(T)=7.2\times10^{10}e^{-8750/T}$ min$^{-1}$. In seconds the state equations are $\dot C_A=[1-C_A-\kappa(T)C_A]/60$ and $\dot T=[350-2T+200\kappa(T)C_A+T_c]/60$. The factor of 60 is essential: the guide asks for a 5-second transient despite giving minute-based rates. Output $T$ has relative degree one, and $T_c=60v-350+2T-200\kappa(T)C_A$ yields $\dot T=v$. No numerical differentiation is used.
+
+New coordinates are $z_1=T$, $\eta=C_A$. The map is an invertible permutation; the input coefficient is the nonzero constant $1/60$. The law is defined for physical temperatures $T>0$ and nonnegative concentration; actual operation additionally requires feasible coolant commands. With $T=330$ K, the shifted zero dynamics are $\dot\eta=(1-1.219759929\eta)/60$. Their unique equilibrium is 0.819833457 mol/L, with pole $-0.020329332$ s$^{-1}$ and time constant 49.19 s, so the internal state is stable.
+
+Choose $v=K(T_d-T)$ with $K=\ln50/5=0.782404601$ s$^{-1}$. The exact 2% temperature settling time is 5 s. Initial conditions are the 310 K equilibrium: $C_A=0.961796454$ mol/L, $T_c=262.359291$ K. The desired temperature steps from 310 to 330 K at 1 s. Default simulation time is 180 s to observe the slower concentration dynamics; `ode45` uses maximum step 0.02 s and tolerances $10^{-8}/10^{-10}$.
+
+The simple models are `part1_cstr.slx`, `part1_cstr_linearization.slx`, and `part1_cstr_tracking.slx`. The tracking model adds a reference-error Sum and a Gain ahead of the nonlinear cancellation. Temperature scope compares desired/actual temperature; Temperature rate scope compares $v$ and actual rate; Concentration scope and Coolant scope monitor the internal state and applied input. Exports target R2021a; actual R2021a execution remains unverified.
+
+![CSTR tracking model diagram export](figures/cstr_tracking_diagram.png)
+
+![CSTR nonlinear cancellation subsystem diagram export](figures/cstr_linearizing_controller.png)
+
+These are diagram exports, not UI screenshots. The academic report uses the following plots of logged simulation signals:
+
+![CSTR temperature, concentration and coolant command](figures/report_cstr_response.png)
+
+`validate_cstr` compares the physical plant with an independently integrated two-state ODE; signed virtual inputs with exact linear temperature motion; tracking with the exact first-order transient; and the internal state with an independently integrated concentration equation. A separate constant-330 K test checks the analytical zero-dynamics solution. Model/export default trajectories are compared in R2024b. Diagnostic logging is enabled only in memory and discarded; raw data stay in ignored `results/`.
+
+The initial step requires $T_c\approx1201$ K in the unconstrained model. This is a material limitation of the requested fast transient, not a demonstrated coolant operating condition. Concentration settling is not required to take 5 s, and its slow convergence must not be confused with failure of the temperature specification.
+
+In R2024b, the nominal sampled 2% settling time is 5.02 s, consistent with the exact 5 s crossing and maximum output spacing 0.02 s. There is no overshoot; nominal peak coolant is 1201.245 K and concentration at 180 s is 0.82370 mol/L. Two open-loop, two virtual-rate and five closed-loop/internal-dynamics cases passed, including the analytical shifted zero-dynamics solution. Maximum tracking-temperature discrepancy is below $2\times10^{-12}$ K; the concentration comparison is below $2.2\times10^{-14}$ mol/L. All three exports matched their working-model default dynamics in R2024b. These software-check details are deliberately excluded from the academic LaTeX text.
+
+```matlab
+setup_project;
+build_cstr;
+validate_cstr;
+export_cstr_figures;
+```
