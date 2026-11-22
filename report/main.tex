@@ -1,0 +1,29 @@
+\documentclass[10pt,a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage[margin=20mm]{geometry}
+\usepackage{amsmath,amssymb,graphicx}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{3pt}
+\newcounter{reportfigure}
+\newcommand{\reportcaption}[1]{\refstepcounter{reportfigure}\par{\small Figure~\thereportfigure: #1\par}}
+\setlength{\abovedisplayskip}{6pt}
+\setlength{\belowdisplayskip}{6pt}
+\newcommand{\answer}[1]{\par\smallskip\textbf{#1}\enspace}
+\makeatletter
+\def\input@path{{report/}{./}}
+\makeatother
+\graphicspath{{../docs/figures/}{docs/figures/}}
+\begin{document}
+\begin{center}
+{\Large\bfseries Automatic Control III --- Laboratory 2}\\[2pt]
+{\normalsize Report: Parts I and II \quad---\quad Mat\'{i}as Garc\'{i}a}
+\end{center}
+\textbf{Part I: theoretical activity.} Questions 1 and 2 follow the laboratory guide, p.~2. All reported results are simulations in MATLAB/Simulink R2024b. Settling time uses a 2\% error band. R2021a exports have not been executed in R2021a.
+\input{question1}
+\clearpage
+\input{question2}
+\par\medskip
+\textbf{Part II --- Quanser AERO 2.} To be documented in the next revision.
+\end{document}

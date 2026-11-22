@@ -1,5 +1,7 @@
 # Control III AERO 2 laboratory
 
+The concise LaTeX report starts at [report/main.tex](report/main.tex). [Build instructions](report/README.md) cover PDF generation and evidence sources. The first draft reports Part I, Questions 1 and 2; Part II will follow.
+
 Parts I and II of the Automatic Control III laboratory. Develop and validate one question at a time, preserving the supplied course files.
 
 ## Part I — Question 1(a)
@@ -178,3 +180,5 @@ build_dc_motor_linearization;
 validate_dc_motor;
 export_dc_motor_figures;
 ```
+
+For Question 2(c–d), run `build_dc_motor_tracking` and `validate_dc_motor_tracking`. Open `simulink/part1_dc_motor_tracking.slx`: the reference steps from 0 to 0.1 rad at 0.05 s, and the third-order feedback targets approximately 0.2 s settling. The Angle scope compares the reference and measured position.

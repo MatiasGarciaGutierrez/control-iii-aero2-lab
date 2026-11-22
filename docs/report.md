@@ -1,5 +1,7 @@
 # Control III laboratory report — Parts I and II
 
+The concise submission-style report is now maintained in [LaTeX](../report/main.tex), with [build and evidence instructions](../report/README.md). Its current draft covers Part I, Questions 1 and 2; the detailed implementation record below remains available.
+
 ## Part I — Question 1(a): nonlinear inverted pendulum
 
 Reference: the laboratory guide, page 2, Question 1(a). The angle is measured from the **upright** vertical. The cart dynamics are excluded by the exercise's assumption.
@@ -1310,3 +1312,20 @@ open_system('part1_dc_motor_linearization/Jerk scope');
 Validation compares four physical-plant cases with independent ODE integration and seven linearized cases with analytical triple-integrator motion. It covers rest, both input signs, nonzero initial states/acceleration and speed reversal in both directions. Plant equations must match between the two models; actual jerk must match $v$ within $10^{-9}$ rad/s³, and analytical angle/speed/acceleration/current errors must stay below $2\times10^{-7}$ in their respective units. Each export is compared with its working model in the installed MATLAB release.
 
 All eleven cases passed in MATLAB/Simulink R2024b. The largest physical-state discrepancy against independent ODE integration was $8.38\times10^{-11}$ (rad, rad/s or A, rounded up). Across linearization cases, maximum angle, speed, acceleration and current errors were $2.21\times10^{-8}$ rad, $3.62\times10^{-8}$ rad/s, $2.97\times10^{-8}$ rad/s² and $6.01\times10^{-9}$ A, respectively (rounded up); the largest discrepancies occurred during speed reversal, where the drag has reduced smoothness. Maximum jerk discrepancy was $4.53\times10^{-14}$ rad/s³ (rounded up). The default run ended at the expected 0.972 rad, 1.62 rad/s and 1.8 rad/s², with peak voltage 0.81151 V. Both R2021a exports matched their working-model default trajectories when executed in R2024b; execution in R2021a remains unverified. No hardware validation is claimed.
+
+### Question 2(c–d): linear tracking control and closed-loop validation
+
+For a constant reference $r$, use $v=54872(r-\theta)-4332\omega-114\alpha$. The error polynomial is $(s+38)^3$, so all three poles are stable at $-38$. For a step from rest, the relative error is $e^{-38t}[1+38t+(38t)^2/2]$. Its exact 2% crossing is approximately 0.198 s. A smooth moving reference additionally requires its first, second and third derivatives in the feedforward law; the saved model tests piecewise constant setpoints.
+
+The simple model [part1_dc_motor_tracking.slx](../simulink/part1_dc_motor_tracking.slx) preserves the motor plant and nonlinear cancellation, adding **Linear tracking control** and **Angle reference**. It computes acceleration from speed/current to avoid an artificial direct-feedthrough dependency through the grouped plant input. No numerical differentiation, delay, saturation or integrator reset is introduced. Angle scope compares the reference/output; Jerk scope compares actual jerk and virtual input. Initial states are zero; the reference steps from 0 to 0.1 rad at 0.05 s. Run for 0.5 s with `ode45`, maximum step 0.0005 s, and the existing $10^{-8}/10^{-10}$ tolerances.
+
+![Logged motor tracking response and voltage](figures/report_dc_motor_tracking.png)
+
+This is a plot of logged simulation signals, not a Scope screenshot. The sampled nominal 2% settling time is approximately 0.198 s with no overshoot; peak voltage is 13.718 V. Six cases cover positive/negative steps, larger steps, nonzero initial states and equilibrium. The analytical third-order transient, nonlinear cancellation and R2021a-export dynamics are checked in R2024b. A 0.2 rad step requires 27.436 V peak in this ideal model; actuator feasibility is not established. Actual execution in R2021a and hardware validation remain unverified.
+
+```matlab
+setup_project;
+build_dc_motor_tracking;
+validate_dc_motor_tracking;
+open_system('part1_dc_motor_tracking');
+```
