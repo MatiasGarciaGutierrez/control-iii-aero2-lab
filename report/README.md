@@ -2,7 +2,7 @@
 
 Open this folder in Codex's LaTeX editor, or edit `main.tex`. The draft contains concise answers to Part I, Questions 1(a–d) and 2(a–d). Part II has a marked continuation point; its written report will be added later.
 
-The report is split into `question1.tex`, `question2.tex`, and the short motor-results paragraph. Selected plots live in `../docs/figures/`; raw MATLAB recordings remain in ignored `../results/`. The introductory paragraph states the simulation release and 2% settling convention. Figures are plots of logged data or explanatory schematics, not screenshots.
+The report is split into `question1.tex`, `question2.tex`, and the short motor-results paragraph. Selected evidence remains in `../docs/figures/`; matching copies in `images/` make this LaTeX project self-contained for the live preview, which cannot read outside its project folder. Raw MATLAB recordings remain in ignored `../results/`. The introductory paragraph states the simulation release and 2% settling convention. Figures are plots of logged data or explanatory schematics, not screenshots.
 
 ## Build
 
@@ -12,7 +12,7 @@ From this directory, with a TeX installation including `latexmk`:
 latexmk -pdf -interaction=nonstopmode -halt-on-error -outdir=../results/latex-report main.tex
 ```
 
-The generated PDF is `../results/latex-report/main.pdf`. Supporting build files stay in that ignored folder. The committed sources and PNGs are sufficient to compile; Python and MATLAB are not needed for this step.
+The generated PDF is `../results/latex-report/main.pdf`. Supporting build files stay in that ignored folder. The committed sources and PNGs inside this directory are sufficient to compile; Python and MATLAB are not needed for this step.
 
 ## Evidence and regeneration
 
@@ -26,4 +26,4 @@ To regenerate the compact report plots after the respective MATLAB validation sc
 uv run --with matplotlib --with scipy python validation/export_latex_report_figures.py
 ```
 
-Run that command from the repository root. It reads logged samples from the two MAT recordings; it does not substitute analytical curves for simulation data.
+Run that command from the repository root. It reads logged samples from the two MAT recordings and updates both the selected evidence and the report's local image copies; it does not substitute analytical curves for simulation data.

@@ -3,6 +3,7 @@
 Run: uv run --with matplotlib --with scipy python validation/export_latex_report_figures.py
 """
 from pathlib import Path
+from shutil import copy2
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -10,6 +11,8 @@ from scipy.io import loadmat
 
 ROOT = Path(__file__).resolve().parents[1]
 FIGURES = ROOT / 'docs' / 'figures'
+REPORT_IMAGES = ROOT / 'report' / 'images'
+REPORT_IMAGES.mkdir(parents=True, exist_ok=True)
 plt.rcParams.update({'font.size': 10, 'axes.spines.top': False, 'axes.spines.right': False})
 
 def axes():
@@ -28,6 +31,7 @@ ax[0].set_ylabel('Angle [rad]')
 ax[1].plot(pendulum['time'], pendulum['u'], linewidth=1.8)
 ax[1].set_ylabel('Input [N m]')
 fig.savefig(FIGURES / 'report_pendulum_response.png', dpi=200)
+copy2(FIGURES / 'report_pendulum_response.png', REPORT_IMAGES / 'report_pendulum_response.png')
 plt.close(fig)
 
 recording = loadmat(ROOT / 'results' / 'dc_motor_tracking_validation.mat', simplify_cells=True)
@@ -41,4 +45,5 @@ ax[0].legend(frameon=False, fontsize=8)
 ax[1].plot(motor['time'], motor['u'], linewidth=1.8)
 ax[1].set_ylabel('Voltage [V]')
 fig.savefig(FIGURES / 'report_dc_motor_tracking.png', dpi=200)
+copy2(FIGURES / 'report_dc_motor_tracking.png', REPORT_IMAGES / 'report_dc_motor_tracking.png')
 plt.close(fig)
