@@ -1,4 +1,182 @@
-# AERO 2 laboratory report — Part II
+# Control III laboratory report — Parts I and II
+
+## Part I — Question 1(a): nonlinear inverted pendulum
+
+Reference: the laboratory guide, page 2, Question 1(a). The angle is measured from the **upright** vertical. The cart dynamics are excluded by the exercise's assumption.
+
+Choose the states $x_1=\theta$ (rad) and $x_2=\dot\theta$ (rad/s). Differentiating these definitions gives $\dot x_1=x_2$ and $\dot x_2=\ddot\theta$. Substitution into the supplied equation gives the nonlinear state-space model:
+
+```math
+\dot x=\underbrace{\begin{bmatrix}x_2\\(g/l)\sin x_1-\bigl(k/(ml^2)\bigr)x_2\end{bmatrix}}_{f(x)}
++\underbrace{\begin{bmatrix}0\\\cos x_1/(ml^2)\end{bmatrix}}_{b(x)}u,
+\qquad y=x_1=\begin{bmatrix}1&0\end{bmatrix}x.
+```
+
+The output is the pendulum angle, anticipating the output specified in 1(b). With $ml^2=0.05$, $g/l=19.62$, $k/(ml^2)=1$ and $1/(ml^2)=20$:
+
+```math
+\boxed{\dot x_1=x_2,\qquad\dot x_2=19.62\sin x_1-x_2+20\cos x_1\,u,\qquad y=x_1.}
+```
+
+This is the original nonlinear model: no small-angle approximation is used. Gravity has a positive sign because a small positive tilt from upright produces positive angular acceleration; friction opposes angular velocity. The guide describes $u$ as torque/force control ambiguously. The implementation follows the supplied equation exactly; dimensionally, $u$ must have torque units (N m) in this equation. A force in newtons would require an additional length factor.
+
+### Simulink construction and settings
+
+Open [part1_pendulum.slx](../simulink/part1_pendulum.slx), or [the R2021a export](../simulink/part1_pendulum_R2021a.slx) on the laboratory machines. The model is independent of the Part II AERO 2 plant.
+
+![Simulink diagram export of the nonlinear pendulum](figures/pendulum_diagram.png)
+
+This image is a **diagram export**, not an actual UI screenshot. The Sum block calculates angular acceleration with signs `+-+`. Two Integrators implement $\ddot\theta\to\dot\theta\to\theta$. The three branches compute gravity $(g/l)\sin\theta$, friction $k\dot\theta/(ml^2)$ and the projected input $u\cos\theta/(ml^2)$. Keep the sine and cosine blocks in radians.
+
+| Setting | Value |
+|---|---|
+| Control input u, Constant block | 0 |
+| Angle Integrator initial condition | `theta0 = 0.1` rad (about 5.73 degrees) |
+| Angular velocity Integrator initial condition | `omega0 = 0` rad/s |
+| Simulation duration | 2 s |
+| Solver | Variable-step `ode45` |
+| Relative / absolute tolerance | $10^{-8}$ / $10^{-10}$ |
+| Maximum step | 0.005 s |
+
+Physical parameters and initial conditions are stored in the model workspace, so the saved model runs without executing an initializer. Change initial conditions in Model Explorer's Model Workspace, or edit the Integrators directly. Double-click **Angle scope**, **Rate scope**, **Acceleration scope** and **Input scope** to inspect the corresponding signals. There is no controller in 1(a).
+
+At the initial condition, the expected acceleration is $19.62\sin(0.1)=1.95873$ rad/s². The small tilt therefore grows. Starting exactly at $\theta=\dot\theta=0$ with $u=0$ instead gives a perfectly stationary simulation; this equilibrium does not demonstrate stability.
+
+![Logged simulated angle and angular velocity for the default unforced response](figures/pendulum_free_response.png)
+
+These are **plots of logged simulation signals**, not Scope UI screenshots. The angle passes the downward vertical ($\theta=\pi$); this is a free falling and oscillating pendulum, not a stabilized upright pendulum. At 2 s, the default trajectory has $\theta=2.7669$ rad and $\dot\theta=-4.0592$ rad/s.
+
+Validation in MATLAB/Simulink R2024b passed five cases: exact upright equilibrium; initial angles $\pm0.1$ rad with zero input; and inputs $\pm0.02$ from zero state. The largest absolute discrepancy across angle and rate samples against independent ODE integration was $2.016\times10^{-10}$ (rad or rad/s, respectively), below the $2\times10^{-6}$ acceptance threshold. The acceleration residual was at most $1.78\times10^{-15}$ rad/s². Unforced energy was nonincreasing within tolerance, sign-reversed trajectories matched within tolerance, and the R2021a export matched the working model's default dynamics. **The export was executed in R2024b; execution in R2021a remains unverified.**
+
+Reproduce the model, checks and figures from the repository as MATLAB's Current Folder:
+
+```matlab
+setup_project;
+build_pendulum;
+metrics = validate_pendulum;
+export_pendulum_figures;
+open_system('part1_pendulum');
+open_system('part1_pendulum/Angle scope');
+```
+
+The validation instruments the model only in memory and closes it without saving the diagnostic logging. It checks zero-input upright equilibrium, both signs of an initial tilt, and both signs of a constant input from rest against independent `ode45` integration. Unforced energy $E=\frac12ml^2\dot\theta^2+mgl\cos\theta$ must be nonincreasing, since $\dot E=-k\dot\theta^2$ when $u=0$. It also compares the exported model's default trajectory. Generated raw results are kept in ignored `results/`. No hardware results are claimed.
+
+## Part I — Question 1(b): input-output feedback linearization
+
+For $y=\theta$, the first derivative is $\dot y=\dot\theta$ and does not contain the input. Differentiate again:
+
+```math
+\ddot y=\underbrace{(g/l)\sin\theta-k\dot\theta/(ml^2)}_{a(x)}
++\underbrace{\cos\theta/(ml^2)}_{b(x)}u.
+```
+
+The relative degree is two wherever $\cos\theta\ne0$. Solving $a(x)+b(x)u=v$ gives
+
+```math
+u=\frac{ml^2v-mgl\sin\theta+k\dot\theta}{\cos\theta}
+=\frac{0.05v-0.981\sin\theta+0.05\dot\theta}{\cos\theta}.
+```
+
+Substitution cancels the gravity and friction terms exactly, leaving $\ddot\theta=v$. The new input $v$ is angular acceleration, not a desired angle. The state coordinates remain $z_1=\theta$, $z_2=\dot\theta$, with $\dot z_1=z_2$ and $\dot z_2=v$. Since the relative degree equals the two-state dimension, no internal dynamics remain.
+
+The controller is defined where $\theta\ne\pi/2+j\pi$, $j\in\mathbb Z$. The connected interval containing upright is $-\pi/2<\theta<\pi/2$. It is valid only while the trajectory stays away from its boundary; near horizontal, the required input can grow without bound. The model does not clip the denominator or saturate the input, because either operation would change the exact cancellation. This is an ideal simulation with exact parameters and state feedback. It does not establish hardware feasibility or robust stabilization.
+
+### Simulink implementation
+
+Open [part1_pendulum_linearization.slx](../simulink/part1_pendulum_linearization.slx), or its [R2021a export](../simulink/part1_pendulum_linearization_R2021a.slx). Question 1(a)'s saved model remains available separately.
+
+![Feedback-linearization model diagram export](figures/pendulum_linearization_diagram.png)
+
+The **Nonlinear pendulum** subsystem copies the nine plant blocks and their equations from Question 1(a). Its input is $u$, and its outputs are angle, angular velocity and angular acceleration. The angle and rate are fed back to **Linearizing controller**. No numerical Derivative block is needed: angular velocity is already an integrator state.
+
+![Linearizing-controller subsystem diagram export](figures/pendulum_linearization_controller.png)
+
+Inside the controller, three Gain blocks and a `+-+` Sum form $ml^2v-mgl\sin\theta+k\dot\theta$. A Product block configured as `*/` divides this numerator by $\cos\theta$. Sine and cosine use radians. These figures are **Simulink diagram exports**, not UI screenshots.
+
+The saved model starts at $\theta(0)=0.1$ rad and $\dot\theta(0)=0$. The **Virtual acceleration v** Step changes from 0 to 0.2 rad/s² at 0.2 s; simulation ends at 2 s. It uses the same `ode45` tolerances and maximum step as Question 1(a). Model parameters and initial conditions live in the model workspace.
+
+Press Run and open **Acceleration scope**: actual acceleration and virtual input should overlap. **Angle scope**, **Rate scope** and **Input scope** show the angle, angular velocity and physical plant input. Before the step, cancellation holds the initial angle. After the step, the expected response is
+
+```math
+\theta(t)=0.1+\tfrac12(0.2)\max(t-0.2,0)^2,
+\qquad \dot\theta(t)=0.2\max(t-0.2,0).
+```
+
+Thus the expected final angle is 0.424 rad and final rate is 0.36 rad/s. This deliberately demonstrates acceleration control without the stabilizing law from Question 1(c). Even with $v=0$, a nonzero initial velocity produces drift.
+
+![Logged simulation response with acceleration comparison](figures/pendulum_linearization_response.png)
+
+The response figure contains **plots of logged simulation signals**, not Scope UI screenshots. Validation temporarily enables logging in memory, then discards those instrumentation changes. It tests both signs of virtual acceleration, drift with nonzero initial rate, and zero-acceleration holds at $\theta=\pm1.3$ rad. Each trajectory is compared with the analytical double-integrator solution; actual acceleration must match $v$ within $10^{-10}$ rad/s² and angle/rate errors must stay below $2\times10^{-7}$ in their respective units. Raw recordings are stored in ignored `results/`.
+
+All five cases passed in MATLAB/Simulink R2024b. Maximum angle error was $7.75\times10^{-15}$ rad, maximum rate error was $4.45\times10^{-15}$ rad/s, and maximum acceleration discrepancy was $1.61\times10^{-15}$ rad/s² (rounded up). The default trajectory ended at 0.424 rad and 0.36 rad/s. The $\pm1.3$ rad holds required input magnitude 3.5337 N m, illustrating increasing control demand away from upright. No actuator limit is specified for this theoretical exercise. The R2021a export reproduced the default trajectory when run in R2024b; actual execution in R2021a remains unverified. No hardware experiments were performed.
+
+```matlab
+setup_project;
+build_pendulum_linearization;
+validate_pendulum_linearization;
+export_pendulum_linearization_figures;
+open_system('part1_pendulum_linearization');
+open_system('part1_pendulum_linearization/Acceleration scope');
+```
+
+## Part I — Question 1(c): stabilize upright in approximately one second
+
+After the cancellation from 1(b), the system is $\ddot\theta=v$. Choose a linear state-feedback law
+
+```math
+v=-k_p\theta-k_d\dot\theta.
+```
+
+The resulting equation is $\ddot\theta+k_d\dot\theta+k_p\theta=0$, whose characteristic polynomial is $s^2+k_ds+k_p$. Compare it with $s^2+2\zeta\omega_ns+\omega_n^2$. Choose critical damping ($\zeta=1$) and $\omega_n=6$ rad/s:
+
+```math
+(s+6)^2=s^2+12s+36,
+\qquad \boxed{k_p=36,\quad k_d=12,\quad v=-36\theta-12\dot\theta.}
+```
+
+Both poles are at $-6$, so the linearized origin $(\theta,\dot\theta)=(0,0)$ is asymptotically stable. For the specified initial angle $\theta_0=0.1$ rad and zero initial rate, the exact response is
+
+```math
+\theta(t)=0.1(1+6t)e^{-6t},
+\qquad\dot\theta(t)=-3.6te^{-6t}.
+```
+
+Use a **2% settling band relative to the initial angular error**, namely $|\theta|\le0.002$ rad for this run. Since the zero-rate response is monotonic, settling is found from $(1+6T_s)e^{-6T_s}=0.02$, yielding $T_s=0.97232$ s, approximately one second. The common approximation $T_s\approx4/(\zeta\omega_n)$ should not be used as the exact critically damped result: it omits the polynomial factor $(1+6t)$.
+
+The complete physical input, including the nonlinear cancellation, is
+
+```math
+u=\frac{-1.8\theta-0.55\dot\theta-0.981\sin\theta}{\cos\theta}.
+```
+
+Only $v$ is linear state feedback; $u$ remains nonlinear. The validity restrictions from 1(b) still apply. Stability of the double integrator establishes regulation of the exact nonlinear plant only while the state stays in a nonsingular operating region and the required input can be applied. For zero initial rate, the signed angle decays monotonically, so every initial angle strictly between $-\pi/2$ and $\pi/2$ stays in that interval under the ideal model. Arbitrary large initial rates do not have this guarantee. No actuator limit or hardware performance is inferred.
+
+### Simulink model and verification
+
+Open [part1_pendulum_regulation.slx](../simulink/part1_pendulum_regulation.slx), or its [R2021a export](../simulink/part1_pendulum_regulation_R2021a.slx). The Question 1(a) and 1(b) models remain available separately. The nonlinear plant and cancellation subsystems are reused from 1(b). The virtual-acceleration Step is replaced with **Linear state feedback**; its two inputs are the plant angle and rate.
+
+![Regulation model diagram export](figures/pendulum_regulation_diagram.png)
+
+![Linear state feedback subsystem diagram export](figures/pendulum_regulation_feedback.png)
+
+Inside **Linear state feedback**, two Gain blocks (`-Kp`, `-Kd`) and an addition implement $v=-36\theta-12\dot\theta$. Parameters `Kp=36`, `Kd=12`, `theta0=0.1`, and `omega0=0` live in the model workspace. The angle target is zero, so there is no external reference generator. Run for 2 s and open **Angle scope** to observe regulation, **Rate scope** for angular velocity, **Acceleration scope** to compare $v$ with actual acceleration, and **Input scope** for $u$. Solver settings are inherited from 1(b).
+
+![Logged regulation response with 2 percent settling band](figures/pendulum_regulation_response.png)
+
+The block figures are **diagram exports**; the response is a **plot of logged simulation signals**, not a Scope UI screenshot. Validation temporarily logs the simple model in memory, without saving diagnostic blocks. It compares seven cases with the analytical solution $\theta(t)=[\theta_0+(\dot\theta_0+6\theta_0)t]e^{-6t}$: signed nominal tilts, larger zero-rate tilts, nonzero initial rate and the exact origin. It checks cancellation, feedback gains, nominal settling, absence of zero-rate overshoot, singularity margin and exported dynamics. A nonzero initial rate can change settling time; the one-second specification is evaluated for the agreed zero-rate initial state.
+
+All seven cases passed in MATLAB/Simulink R2024b. For $[\theta_0,\dot\theta_0]=[0.1,0]$, the first recorded sample after permanent entry into the 2% band was at 0.97618 s, consistent with the exact 0.97232 s crossing and the 0.005 s maximum sampling gap. No overshoot was observed, and peak input magnitude was 0.27933 N m. Across all cases, maximum angle and rate discrepancies against the analytical solution were $1.37\times10^{-11}$ rad and $1.02\times10^{-10}$ rad/s, respectively (rounded up). Maximum cancellation residual was $1.43\times10^{-14}$ rad/s². The zero-rate $\pm1.3$ rad tests required 12.2814 N m peak magnitude, reinforcing that simulated mathematical validity does not establish actuator feasibility. The origin remained stationary. The R2021a export matched the default trajectory when executed in R2024b; execution in R2021a remains unverified. These are simulation results only.
+
+```matlab
+setup_project;
+build_pendulum_regulation;
+validate_pendulum_regulation;
+export_pendulum_regulation_figures;
+open_system('part1_pendulum_regulation');
+open_system('part1_pendulum_regulation/Angle scope');
+```
+
+## Part II — AERO 2
 
 This report follows [Part II of the laboratory guide, pages 4–6](../course/Automatic_Control_III_Computer_Room_II.pdf). Questions 1–5 and the optional position-integral controller are implemented and simulated. Question 4 tests ideal motor tracking; Question 5 connects the IP motor loops to the supplied nonlinear plant. A separate hardware-interface port is now available; its offline checks and outstanding hardware validation are documented below.
 
