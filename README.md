@@ -1,6 +1,6 @@
 # Control III AERO 2 laboratory
 
-Read the compiled [PDF report](report/lab2_report.pdf), or edit its [LaTeX source](report/main.tex). [Build instructions](report/README.md) cover PDF generation and evidence sources. The current draft reports Part I, Questions 1–3; Part II will follow.
+Read the compiled [PDF report](report/lab2_report.pdf), or edit its [LaTeX source](report/main.tex). [Build instructions](report/README.md) cover PDF generation and evidence sources. Separate parts report Part I, Questions 1–3, and Part II, Questions 1–5, with optional integral action and outstanding experimental work.
 
 Parts I and II of the Automatic Control III laboratory. Develop and validate one question at a time, preserving the supplied course files.
 

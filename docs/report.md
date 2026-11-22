@@ -1,6 +1,6 @@
 # Control III laboratory report — Parts I and II
 
-The concise submission-style report is now maintained in [LaTeX](../report/main.tex), with [build and evidence instructions](../report/README.md). Its current draft covers Part I, Questions 1–3; the detailed implementation record below remains available. Test counts and software compatibility checks are kept here rather than in the academic report.
+The concise submission-style report is maintained in [LaTeX](../report/main.tex), with [build and evidence instructions](../report/README.md) and a committed [PDF](../report/lab2_report.pdf). Separate parts cover Part I, Questions 1–3, and Part II, Questions 1–5, optional position integral action and outstanding experimental work. Appendices A and B show the corresponding Simulink diagram exports. The detailed implementation record below remains available; test counts and software compatibility checks are kept here rather than in the academic report.
 
 ## Part I — Question 1(a): nonlinear inverted pendulum
 

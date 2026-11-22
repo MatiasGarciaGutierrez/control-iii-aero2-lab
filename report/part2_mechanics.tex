@@ -1,0 +1,45 @@
+\section*{3. Input-output linearization of the mechanics}
+Let $q=[\psi,\theta]^\mathsf{T}$ denote yaw and pitch. With perfect rotor-speed tracking, define $s(\omega_d)=[\omega_{m,d}|\omega_{m,d}|,\omega_{t,d}|\omega_{t,d}|]^\mathsf{T}$. The mechanical state-space model is
+\begin{equation}
+x=\begin{bmatrix}q\\\dot q\end{bmatrix},\qquad
+\boxed{\dot x=
+\begin{bmatrix}\dot q\\-M_q^{-1}(c_q+g_q)\end{bmatrix}
++\begin{bmatrix}0_{2\times2}\\M_q^{-1}\Gamma(\theta)\end{bmatrix}s(\omega_d)},\qquad
+y=\begin{bmatrix}I_2&0_{2\times2}\end{bmatrix}x.
+\end{equation}
+Using the supplied model, with $\Delta J=J_\psi-j_\psi$,
+\begin{equation}
+\begin{aligned}
+M_q&=\operatorname{diag}(J_\psi\cos^2\theta+j_\psi\sin^2\theta,\ J_\theta),\\
+c_q&=\begin{bmatrix}-\Delta J\sin(2\theta)\dot\theta\dot\psi\\
+\tfrac12\Delta J\sin(2\theta)\dot\psi^2\end{bmatrix},\qquad
+g_q=\begin{bmatrix}0\\G\sin\theta\end{bmatrix},\\
+\Gamma(\theta)&=\begin{bmatrix}\cos\theta&0\\0&1\end{bmatrix}
+\begin{bmatrix}-k_t&Lk_f\\Lk_f&k_t\end{bmatrix}.
+\end{aligned}
+\end{equation}
+Introduce the virtual body-acceleration input $a\in\mathbb R^2$. The exact inverse is
+\begin{equation}
+\boxed{s_d=\Gamma(\theta)^{-1}(M_qa+c_q+g_q),\qquad
+\omega_d=\operatorname{sign}(s_d)\sqrt{|s_d|},}
+\end{equation}
+where the square root and sign act componentwise. Substitution gives $\ddot q=a$. The state coordinates remain $z=x=[\psi,\theta,\dot\psi,\dot\theta]^\mathsf{T}$:
+\begin{equation}
+\dot z=\begin{bmatrix}0_{2\times2}&I_2\\0_{2\times2}&0_{2\times2}\end{bmatrix}z
++\begin{bmatrix}0_{2\times2}\\I_2\end{bmatrix}a,\qquad
+y=\begin{bmatrix}I_2&0_{2\times2}\end{bmatrix}z.
+\end{equation}
+With $s$ as input, each angle has relative degree two; no internal mechanical dynamics remain. Since $\det\Gamma=-\cos\theta[k_t^2+(Lk_f)^2]$, the inverse requires $\cos\theta\ne0$. The simulation restricts $|\theta|\le60^\circ$, inside the mathematical interval $|\theta|<90^\circ$. The signed square root is defined at zero but is not differentiable there; a smooth local inverse requires nonzero rotor commands. Exact cancellation assumes accurate parameters, measured states and achievable rotor-speed commands.
+
+\section*{4. Linear yaw/pitch position control}
+For a constant desired configuration $q_d$, choose
+\begin{equation}
+a=K_q(q_d-q)-D_q\dot q,\qquad
+\ddot e+D_q\dot e+K_qe=0,\quad e=q_d-q.
+\end{equation}
+For identical critically damped axes, the 2\% condition $(1+\lambda T_s)e^{-\lambda T_s}=0.02$ with $T_s=3$ s gives $\lambda=5.83392/3=1.9446406$ s$^{-1}$. Thus
+\begin{equation}
+\boxed{K_q=\lambda^2I_2=3.7816269I_2,\qquad
+D_q=2\lambda I_2=3.8892811I_2.}
+\end{equation}
+From rest, signed single-axis 0.1 rad steps and simultaneous $[0.2,0.1]^\mathsf{T}$ rad steps settle in 2.996 s without overshoot. The largest requested main/tail speeds are 178.56/298.00 rad/s. These results meet the approximately 3 s target under perfect motor tracking; finite motor bandwidth is included next.

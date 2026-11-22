@@ -1,10 +1,10 @@
 # Laboratory report
 
-Open this folder in Codex's LaTeX editor, or edit `main.tex`. The draft contains concise answers to Part I, Questions 1(a–d), 2(a–d) and 3(a–d). Part II has a marked continuation point; its written report will be added later.
+Open this folder in Codex's LaTeX editor, or edit `main.tex`. Separate Part I and Part II headings distinguish the theoretical exercises from the Quanser AERO 2 application. The report contains concise answers to Part I, Questions 1–3, and Part II, Questions 1–5, with optional position integral action and an explicit account of outstanding experimental work.
 
 The compiled [PDF report](lab2_report.pdf) is committed alongside the LaTeX sources for viewing directly on GitHub. Regenerate it whenever the report sources or figures change.
 
-The report is split by question, with short motor/CSTR results paragraphs. The title lists Matías García and Snoeijink Lars. Its academic text contains equations, methods and control-performance findings; software test counts and export compatibility details belong in repository documentation. Appendix A contains actual Simulink diagram exports of each closed loop and its nonlinear cancellation subsystem. Selected evidence remains in `../docs/figures/`; matching copies in `images/` make this LaTeX project self-contained for the live preview, which cannot read outside its project folder. Raw MATLAB recordings remain in ignored `../results/`. Diagrams are model exports and plots are logged signals, not UI screenshots.
+The report is split by question, with short results paragraphs. The title lists Matías García and Snoeijink Lars. Its academic text contains equations, methods and control-performance findings; software test counts and export compatibility details belong in repository documentation. Appendices A and B contain actual Simulink diagram exports for Parts I and II. Equations and figures use part-specific numbering. Selected evidence remains in `../docs/figures/`; matching copies in `images/` make this LaTeX project self-contained for the live preview, which cannot read outside its project folder. Raw MATLAB recordings remain in ignored `../results/`. Diagrams are model exports and plots are logged signals, not UI screenshots.
 
 ## Build
 
@@ -35,3 +35,11 @@ Run that command from the repository root. It reads logged samples from the two 
 For the CSTR plot, run `setup_project; build_cstr; validate_cstr; export_cstr_figures` in MATLAB. The exporter synchronizes the selected evidence and the local LaTeX image.
 
 To refresh Appendix A, run `setup_project; export_report_block_diagrams`. It exports the saved pendulum, motor and CSTR closed loops and cancellation subsystems, synchronizing `docs/figures/` and `report/images/` without modifying the models or rerunning simulations.
+
+Part II summarizes the implementation and measured simulation results documented in `../docs/report.md` and `../docs/hardware.md`. The complete ideal-sensor cascade settles in about 3.2 s; the filtered hardware-interface surrogate takes about 5.2 s and does not meet the 3 s target. Neither result constitutes physical experimental validation.
+
+To regenerate the two compact Part II plots from `motor_ip_validation.mat` and `cascade_control_validation.mat` and synchronize the six existing Part II diagram exports, run from the repository root:
+
+```sh
+uv run --with matplotlib --with scipy python validation/export_part2_report_figures.py
+```

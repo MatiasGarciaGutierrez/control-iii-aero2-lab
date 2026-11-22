@@ -1,0 +1,36 @@
+\section*{1. PI control of rotor speed}
+The main and tail motors obey identical dynamics. With $\omega=[\omega_m,\omega_t]^\mathsf{T}$ and applied voltages $v=[v_m,v_t]^\mathsf{T}$,
+\begin{equation}
+\dot\omega=-5.78\omega+96.532v,\qquad
+P(s)=\frac{96.532}{s+5.78}.
+\end{equation}
+For each motor, use $e=\omega_d-\omega$, $v_{\rm raw}=K_pe+I$, $\dot I=K_ie$. The denominator of the unsaturated closed loop is $s^2+(5.78+96.532K_p)s+96.532K_i$. The estimate $T_s\approx4/\lambda$ gives $\lambda=13.3333$ s$^{-1}$ for a 0.3 s target. Matching $(s+\lambda)^2$ yields
+\begin{equation}
+\boxed{K_p=\frac{2\lambda-5.78}{96.532}=0.2163704,\qquad
+K_i=\frac{\lambda^2}{96.532}=1.8416461.}
+\end{equation}
+Applied voltage is limited to $\pm24$ V. From rest, $\pm100$ rad/s steps at 0.1 s give a 2\% settling time of 0.318 s, 3.70\% overshoot and 21.64 V peak voltage, without saturation. Settling is about 6\% above the 0.3 s target. The PI numerator zero explains why repeated real poles do not produce a monotonic step response.
+
+\section*{2. IP control and anti-windup}
+Retain the same gains and apply proportional feedback only to measured speed:
+\begin{equation}
+\boxed{v_{\rm raw}=I-K_p\omega,\qquad
+\dot I=K_i(\omega_d-\omega)+K_{\rm aw}(v-v_{\rm raw}),\qquad
+v=\operatorname{sat}_{[-24,24]}(v_{\rm raw}).}
+\end{equation}
+Choose $K_{\rm aw}=20$ s$^{-1}$, corresponding to a 0.05 s tracking time. The feedback correction opposes integral accumulation during saturation. Moving the proportional term preserves the poles but removes the reference-response zero; the reference step therefore causes no instantaneous proportional voltage jump.
+\begin{center}
+\begin{tabular}{lrr}
+\hline
+Nominal $\pm100$ rad/s step & PI & IP\\\hline
+2\% settling time (s) & 0.318 & 0.434\\
+Overshoot (\%) & 3.70 & 0\\
+Peak applied voltage (V) & 21.64 & 7.36\\\hline
+\end{tabular}
+\end{center}
+Thus IP is monotonic but does not retain the original 0.3 s settling time with unchanged gains. For an unreachable $\pm800$ rad/s demand followed by $\pm100$ rad/s at 1.1 s, anti-windup reduces recovery time from 1.898 s to 0.570 s and post-return saturation from 1.372 s to 0.042 s. It improves recovery without increasing actuator authority.
+\begin{center}
+\includegraphics[width=\linewidth]{report_part2_motor_comparison.png}
+\reportcaption{Simulated main-motor speed and voltage for the same 100 rad/s reference, using PI and IP with identical gains.}
+\end{center}
+These simulations use ideal measurements and forward Euler integration with a 0.002 s step. Simulink block diagrams are provided in Appendix~B.
