@@ -2,6 +2,8 @@
 
 Open this folder in Codex's LaTeX editor, or edit `main.tex`. The draft contains concise answers to Part I, Questions 1(a–d), 2(a–d) and 3(a–d). Part II has a marked continuation point; its written report will be added later.
 
+The compiled [PDF report](lab2_report.pdf) is committed alongside the LaTeX sources for viewing directly on GitHub. Regenerate it whenever the report sources or figures change.
+
 The report is split by question, with short motor/CSTR results paragraphs. Its academic text contains equations, methods and control-performance findings; software test counts and export compatibility details belong in repository documentation. Selected evidence remains in `../docs/figures/`; matching copies in `images/` make this LaTeX project self-contained for the live preview, which cannot read outside its project folder. Raw MATLAB recordings remain in ignored `../results/`. Figures are plots of logged data or explanatory schematics, not screenshots.
 
 ## Build
@@ -10,9 +12,10 @@ From this directory, with a TeX installation including `latexmk`:
 
 ```sh
 latexmk -pdf -interaction=nonstopmode -halt-on-error -outdir=../results/latex-report main.tex
+cp ../results/latex-report/main.pdf lab2_report.pdf
 ```
 
-The generated PDF is `../results/latex-report/main.pdf`. Supporting build files stay in that ignored folder. The committed sources and PNGs inside this directory are sufficient to compile; Python and MATLAB are not needed for this step.
+Compilation writes `../results/latex-report/main.pdf`; the second command updates the published copy, `lab2_report.pdf`. Supporting build files stay in the ignored results folder. The committed sources and PNGs inside this directory are sufficient to compile; Python and MATLAB are not needed for this step.
 
 ## Evidence and regeneration
 

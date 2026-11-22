@@ -1,6 +1,6 @@
 # Control III AERO 2 laboratory
 
-The concise LaTeX report starts at [report/main.tex](report/main.tex). [Build instructions](report/README.md) cover PDF generation and evidence sources. The current draft reports Part I, Questions 1–3; Part II will follow.
+Read the compiled [PDF report](report/lab2_report.pdf), or edit its [LaTeX source](report/main.tex). [Build instructions](report/README.md) cover PDF generation and evidence sources. The current draft reports Part I, Questions 1–3; Part II will follow.
 
 Parts I and II of the Automatic Control III laboratory. Develop and validate one question at a time, preserving the supplied course files.
 
