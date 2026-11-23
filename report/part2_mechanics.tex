@@ -29,7 +29,7 @@ where the square root and sign act componentwise. Substitution gives $\ddot q=a$
 +\begin{bmatrix}0_{2\times2}\\I_2\end{bmatrix}a,\qquad
 y=\begin{bmatrix}I_2&0_{2\times2}\end{bmatrix}z.
 \end{equation}
-With $s$ as input, each angle has relative degree two; no internal mechanical dynamics remain. Since $\det\Gamma=-\cos\theta[k_t^2+(Lk_f)^2]$, the inverse requires $\cos\theta\ne0$. The simulation restricts $|\theta|\le60^\circ$, inside $|\theta|<90^\circ$. The signed square root is defined at zero but is not differentiable there; a smooth local inverse requires nonzero rotor commands. At steady speed, the voltage limit gives $|\omega_d|\le V_{\max}b_m/a_m=400.8$ rad/s for 24 V. This is a steady-state bound, not a guarantee of transient tracking. Exact cancellation also assumes accurate parameters and measured states.
+With $s$ as input, each angle has relative degree two; no internal mechanical dynamics remain. Since $\det\Gamma=-\cos\theta[k_t^2+(Lk_f)^2]$, the inverse requires $\cos\theta\ne0$. The matrix $M_q$ is always invertible, since $J_\psi\cos^2\theta+j_\psi\sin^2\theta\ge j_\psi>0$. The simulation restricts $|\theta|\le60^\circ$, inside $|\theta|<90^\circ$. The signed square root is defined at zero but is not differentiable there; a smooth local inverse requires nonzero rotor commands. At steady speed, the voltage limit gives $|\omega_d|\le V_{\max}b_m/a_m=400.8$ rad/s for 24 V. This is a steady-state bound, not a guarantee of transient tracking. Exact cancellation also assumes accurate parameters and measured states. The assumption $\omega\approx\omega_d$ needs speed loops much faster than the position loop.
 
 \section*{4. Linear yaw/pitch position control}
 For a desired configuration $q_d$, use measured rates and reference-velocity feedforward:
@@ -42,7 +42,7 @@ Matching each axis polynomial to $(s+\lambda)^2$ gives $K_q=\lambda^2I_2$, $D_q=
 \boxed{K_q=\lambda^2I_2=3.7816I_2,\qquad
 D_q=2\lambda I_2=3.8893I_2.}
 \end{equation}
-The derivative $\dot q_d$ is calculated analytically from the supplied smooth trajectory and sampled at the same times. Without feedforward, the right-hand side also contains $D_q\dot q_d$, causing greater lag. For supplementary sharp steps the reference-velocity channel is disabled; the original 2.996 s ideal-motor settling result is retained. No numerical differentiation of noisy measurements or discontinuous step references is introduced.
+The derivative $\dot q_d$ is calculated analytically from the supplied smooth trajectory and sampled at the same times. Without feedforward, the right-hand side also contains $D_q\dot q_d$, causing greater lag. For supplementary sharp steps the reference-velocity channel is disabled; the original 2.996 s ideal-motor settling result is retained. No numerical differentiation of noisy measurements or discontinuous step references is introduced. The laboratory model differs here: it differentiates the measured error (see Experimental validation).
 \begin{center}
 \includegraphics[width=\linewidth]{report_part2_position_steps.png}
 \reportcaption{Simulink yaw/pitch step responses with ideal motor tracking. Shading marks the $\pm2\%$ bands; vertical lines mark the 3 s target. Both axes settle in 2.996 s without overshoot.}

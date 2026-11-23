@@ -33,7 +33,7 @@ Overshoot (\%) & 3.70 & 0\\
 Peak applied voltage (V) & 21.64 & 7.36\\\hline
 \end{tabular}
 \end{center}
-Thus IP is monotonic but does not retain the original 0.3 s settling time with unchanged gains. For an unreachable $\pm800$ rad/s demand followed by $\pm100$ rad/s at 1.1 s, anti-windup reduces recovery time from 1.898 s to 0.570 s and post-return saturation from 1.372 s to 0.042 s. It improves recovery without increasing actuator authority.
+Thus IP is monotonic but does not retain the original 0.3 s settling time with unchanged gains. The faster gains of the laboratory model meet it (see Experimental validation). For an unreachable $\pm800$ rad/s demand followed by $\pm100$ rad/s at 1.1 s, anti-windup reduces recovery time from 1.898 s to 0.570 s and post-return saturation from 1.372 s to 0.042 s. It improves recovery without increasing actuator authority.
 \begin{center}
 \includegraphics[width=\linewidth]{report_part2_motor_comparison.png}
 \reportcaption{Simulated main-motor speed and voltage for the same 100 rad/s reference, using PI and IP with identical gains.}

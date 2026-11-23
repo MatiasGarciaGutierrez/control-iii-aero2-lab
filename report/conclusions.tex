@@ -1,0 +1,23 @@
+\section*{Conclusions}
+\textbf{Part I.} Input-output linearization~[2] turned each nonlinear system into a chain of integrators, so a linear controller could be designed by pole placement. All specifications were met in simulation: 0.9762~s (pendulum), 0.198~s (DC motor), 5.02~s (CSTR), and 4.545~s for the ball and beam, as predicted for the given gains. The exercises also showed the limits of the method:
+\begin{itemize}\setlength{\itemsep}{0pt}
+\item an exact cancellation can ask for large inputs (27.4~V for a 0.2~rad motor step, a coolant at 1201~K);
+\item every law has a validity range (for example $|\theta|<\pi/2$ for the pendulum);
+\item when the relative degree is lower than the order, the zero dynamics decide stability (CSTR: stable);
+\item when the relative degree is not defined everywhere (ball and beam), an approximate law is the practical solution.
+\end{itemize}
+
+\textbf{Part II, simulation.} The cascade of fast speed loops and a slower linearizing position loop works as designed:
+\begin{itemize}\setlength{\itemsep}{0pt}
+\item the PI speed loop settles in 0.318~s but overshoots and needs 21.6~V; the IP loop has no overshoot and needs 7.4~V, but settles in 0.434~s;
+\item the anti-windup shortens the recovery after saturation from 1.898~s to 0.570~s;
+\item the position loop settles in 2.996~s with ideal motors and 3.2~s in the full cascade;
+\item feeding the reference velocity forward cuts the tracking error by about 90\%;
+\item the optional integral action keeps the settling time near 3~s.
+\end{itemize}
+
+\textbf{Part II, device.} The controller ran on the AERO~2 with the gains of the provided setup script, at the first attempt and without tuning. The only change was taking the derivative from the error, because the template's speed estimate lagged and made the rotors oscillate. The device followed the course references closely and recovered from pushes by hand within a few seconds. Compared with the simulation, yaw lagged about 0.2--0.3~s, most likely because of friction and cable drag that the model leaves out. Integral action was on in every run ($K_i=1$), and the offsets at rest stayed below 0.015~rad; no run without it was made. The device gains give slower position poles than the 3~s design, so that specification is shown in simulation only. No numerical data were saved, so these results come from traced screenshots.
+
+\paragraph{References.}
+{\small [1] \textit{Computer Room Exercises: Linearization}, Automatic Control III, laboratory assignment, UPC.\par
+[2] R. Costa-Castell\'o, \textit{Linearization}, Automatic Control III lecture slides, UPC.}

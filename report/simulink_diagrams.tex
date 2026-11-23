@@ -42,3 +42,21 @@
 \includegraphics[width=\linewidth,height=0.25\textheight,keepaspectratio]{cstr_linearizing_controller.png}
 \reportcaption{Simulink diagram export of the coolant-temperature calculation, including conversion from minute-based process rates to seconds.}
 \end{center}
+\clearpage
+\subsection*{Question 4: ball and beam}
+\begin{center}
+\includegraphics[width=\linewidth,height=0.25\textheight,keepaspectratio]{ballbeam_plant_interior.png}
+\reportcaption{Opened ball-and-beam plant: ball and beam accelerations and the four state integrators.}
+\end{center}
+\begin{center}
+\includegraphics[width=\linewidth,height=0.45\textheight,keepaspectratio]{ballbeam_closed_loop.png}
+\reportcaption{Simulink diagram export of the ball-and-beam closed loop. The linear controller acts on the new coordinates, and the designed linear closed loop runs alongside for comparison.}
+\end{center}
+\begin{center}
+\includegraphics[width=\linewidth,height=0.25\textheight,keepaspectratio]{ballbeam_linearizing_law.png}
+\reportcaption{Simulink diagram export of the ball-and-beam linearizing law $u=\alpha(x)+\beta(x)v$.}
+\end{center}
+\begin{center}
+\includegraphics[width=\linewidth,height=0.25\textheight,keepaspectratio]{ballbeam_coordinates.png}
+\reportcaption{Simulink diagram export of the new coordinates $z$: ball position and velocity, then acceleration and jerk with the centrifugal term neglected.}
+\end{center}

@@ -1,18 +1,42 @@
 \section*{Experimental validation}
-\textbf{Evidence.} Two laboratory Scope screenshots document physical course-reference tracking with the derived PD/IP cascade. The operator deliberately introduced disturbances by hand. Numerical recordings of angles, rotor speeds, voltages and disturbance torques were not supplied; the experimental assessment is therefore qualitative. Original screenshots are shown in Appendix~C.
+\subsection*{Model on the device}
+On the AERO~2 we ran the cascade of Sections~1--4, built in the provided template and saved as \texttt{lin\_feedback\_\allowbreak Lars\_Matias.slx} (folder \texttt{real\_hardware}). Appendix~B shows its blocks. It follows those sections, with these differences:
+\begin{itemize}\setlength{\itemsep}{0pt}
+\item Speed loops (\texttt{IP\_m}, \texttt{IP\_t}): the IP controller with anti-windup of Section~2. The anti-windup signal passes the same $1/(s/180+1)$ filter as the speed measurement, and $K_{\rm aw}=K_ik_w$.
+\item Linearizing law (\texttt{MATLAB Function}): the inverse of Section~3, with the filtered rate estimates in $c_q$ and without a guard for $\cos\theta\to0$. The pitch reference stays below 0.6~rad.
+\item Signed square roots (\texttt{Subsystem}, \texttt{Subsystem1}): $\omega_d=\operatorname{sign}(s_d)\sqrt{|s_d|}$ as in Section~3, without a speed limit.
+\item Position controllers (\texttt{Subsystem2} yaw, \texttt{Subsystem3} pitch): the law of Section~4 plus an integral term (see the optional integral action below). The derivative term $K_d\dot e=K_d(\dot q_d-\dot q)$ gives both the rate feedback and the reference-velocity feedforward.
+\end{itemize}
+All gains come from the provided setup script \texttt{nlc\_setup\_solucion.m}. They worked at the first attempt, so nothing was tuned. They differ from the design gains of Sections~1--4:
+\begin{center}
+\small
+\begin{tabular}{llll}
+\hline
+Loop & Device gains & Poles (s$^{-1}$) & Design gains\\\hline
+Speed & $K_p=0.8$, $K_i=10$, $k_w=0.5$ & $-14.0$, $-69.0$ & $K_p=0.2164$, $K_i=1.8416$, $K_{\rm aw}=20$\\
+Position & $K_p=2.5$, $K_d=2$, $K_i=1$ & $-0.60$, $-0.70\pm1.08j$ & $K_q=3.7816$, $D_q=3.8893$\\\hline
+\end{tabular}
+\end{center}
+In simulation the device speed loops settle in about 0.30 s. The position poles are slower than the 3 s design, so that specification is met in simulation only.
 
-\subsection*{Filter-aware simulation and selected remedy}
-The template's second-order filter uses $\omega_f=10$ rad/s, $\zeta_f=0.8$, zero initial state. The surrogate applies
-\begin{equation}
-q_f=H_f(s)q,\qquad \widehat{\dot q}=sH_f(s)q,\qquad
-H_f(s)=\frac{\omega_f^2}{s^2+2\zeta_f\omega_fs+\omega_f^2}
-=\frac{100}{s^2+16s+100}.
-\end{equation}
-Raw angles feed the controller; estimated rates enter damping and nonlinear cancellation. Tachometers use $180/(s+180)$; no filter precedes the signed square root. These are offline surrogate results. Original gains give 5.220--5.222 s settling; the selected hardware configuration uses the retuned gains below.
-\input{filter_remedy_results}
+\subsection*{The one change: the rate comes from the error}
+The AERO~2 has no velocity sensor. The template therefore used a rate estimate: the encoder angle passed through a second-order filter (10~rad/s, damping 0.8). This estimate lags the real rate by about 0.16~s. With this estimate, the rotors oscillated and the body did not settle. The reason is that the estimated speed is always about 0.16~s old. The braking part of the controller therefore reacts to how the body was moving a moment ago: it brakes too late, the body overshoots, and the controller keeps correcting back and forth. Our simulation shows the same: if the real rotors respond only slightly slower than in the model (0.1--0.15~s), the template version keeps swinging, while the version without the estimate settles. We removed the rate input (\texttt{dangle}) and let the derivative act on the error, $\dot e=\dot q_d-\dot q$. The control law stays the same; only the source of $\dot q$ changes, from a filtered estimate to a direct numerical derivative. After this change the controller worked. No records were made before the change.
+
+\subsection*{Results and comparison with simulation}
+Two runs were recorded with the course reference, as Scope screenshots (Appendix~C); no numerical data were saved. The figure below compares the simulation of this controller with the second run. The device curves were traced from the screenshot, to within about 0.005~rad. The gray bands mark where we pushed the body by hand.
+\begin{center}
+\includegraphics[width=\linewidth]{lab_hw_vs_sim.png}
+\reportcaption{Course reference (dashed), simulation of the final controller (gray) and the second run on the AERO~2 (blue, traced from the Scope screenshot). Gray bands: pushes by hand.}
+\end{center}
+\begin{itemize}\setlength{\itemsep}{0pt}
+\item Between the hand pushes, the AERO~2 follows the reference closely. After each push it returns to the reference within a few seconds.
+\item In yaw, the AERO~2 runs about 0.2--0.3~s behind the reference. The simulation follows it almost exactly.
+\item In pitch there is no extra delay; the device even starts each move slightly early.
+\item At rest the remaining offset is at most 0.015~rad.
+\end{itemize}
 
 \subsection*{Validation section by section}
-The assignment~[1] calls for validating the speed loops, individual axes and complete cascade in sequence. Only the complete course-tracking tests are documented here. The isolated speed-loop simulation predicts about 0.43 s settling, no overshoot and 6 V at 100 rad/s; these are not measured device results.
+The assignment~[1] calls for validating the speed loops, individual axes and complete cascade in sequence. Only the complete course-tracking tests are documented here. With the gains of Section~2, the isolated speed-loop simulation predicts about 0.43 s settling, no overshoot and 6 V at 100 rad/s; these are not measured device results. In simulation, the device gains ($K_p=0.8$, $K_i=10$) give about 0.30 s without overshoot and a peak of about 11 V.
 \begin{center}
 \begin{tabular}{ll}
 \hline
@@ -23,15 +47,18 @@ Course references with manual disturbances & Two Scope screenshots\\\hline
 \end{tabular}
 \end{center}
 
-\subsection*{Simulation versus experiment}
-The screenshots show tracking between perturbations and substantial transient excursions following manual intervention, followed by recovery toward the references. The nominal simulations do not include these hand-applied torques, so whole-run errors are not directly comparable. Other possible differences include rate filtering, friction and cable torque omitted by $B_q=0$, parameter uncertainty, thrust near zero speed and sensor noise; their individual contributions cannot be separated from these images.
+\subsection*{Why the simulation and the device differ}
+The main difference is the extra delay in yaw. We attribute it mainly to friction and cable drag on the yaw axis, which the model leaves out ($B_q=0$). A drag that grows with speed slows the yaw motion, and it fits the measured delay best. A pure time delay or slower rotors would also delay the start of each move, but the device actually starts early, so they are not the main cause. Smaller differences come from errors in the model parameters (thrust, inertia): for example, pitch dips by about 0.065~rad when yaw moves at 9~s, so the decoupling is not perfect. The encoder steps add some noise, and the hand pushes are not in the simulation at all.
+
+\subsection*{Offline study of the rate filter}
+This offline study shows how the template's rate filter affects the loop (see the one change above). The template's second-order filter uses $\omega_f=10$ rad/s, $\zeta_f=0.8$, zero initial state. The surrogate applies
+\begin{equation}
+q_f=H_f(s)q,\qquad \widehat{\dot q}=sH_f(s)q,\qquad
+H_f(s)=\frac{\omega_f^2}{s^2+2\zeta_f\omega_fs+\omega_f^2}
+=\frac{100}{s^2+16s+100}.
+\end{equation}
+Raw angles feed the controller; estimated rates enter damping and nonlinear cancellation. Tachometers use $180/(s+180)$; no filter precedes the signed square root. These are offline surrogate results. Original gains give 5.220--5.222 s settling; the retuned gains below were studied offline only and were not used on the device. Original gains are those of Section~4, not the device gains, so the study shows the mechanism rather than device numbers: the filter lag in the damping path reduces the damping.
+\input{filter_remedy_results}
 
 \subsection*{Optional integral action on the device}
-A paired device test with and without integral action was not documented. Its effect on steady offsets, voltage demand and disturbance recovery cannot be assessed from the supplied screenshots.
-
-\paragraph{Conclusion.}
-Following the feedback-linearization method~[2], the prescribed ideal output dynamics are obtained where the inverse exists; the CSTR internal equilibrium is stable. Reference-velocity feedforward reduces simulated course-tracking RMS by about 90\%. Physical Scope records show tracking and recovery under manual disturbances; quantitative experimental validation requires logged signals.
-
-\paragraph{References.}
-{\small [1] \textit{Computer Room Exercises: Linearization}, Automatic Control III, laboratory assignment, UPC.\par
-[2] R. Costa-Castell\'o, \textit{Linearization}, Automatic Control III lecture slides, UPC.}
+All device runs used this integral action ($K_i=1$). We did not run the controller without it, so the two cannot be compared on the device. The small offsets at rest (at most 0.015~rad) agree with integral action removing steady errors.

@@ -27,4 +27,10 @@ Add an acceleration-valued integral contribution $J$. Matching each axis denomin
 \end{equation}
 With $\lambda=1.9446$ s$^{-1}$ and the velocity channel disabled for sharp steps, the ideal reference transfer function is $\lambda^2/(s+\lambda)^2$; simulated settling is 3.042--3.050 s. Both outer integrators pause during voltage saturation. The reference weight is retained, so the integral design is not equivalent to the unweighted PD tracker. Supplementary constant-torque tests confirm removal of steady offsets; integral action is used for disturbance rejection rather than assumed to improve moving-reference tracking.
 
-The following section distinguishes offline preparation from the physical measurements still required by the assignment~[1].
+\textbf{Integral action on the device.} The controller on the AERO~2 also has integral action, with the gains of the provided setup script:
+\begin{equation}
+a=K_pe+K_d\dot e+K_i\int_0^te\,dt,\qquad K_p=2.5,\quad K_d=2,\quad K_i=1.
+\end{equation}
+Each axis then has $s^3+2s^2+2.5s+1$ (poles $-0.60$ and $-0.70\pm1.08j$). Unlike the design above, it has no reference weighting, and its integrator does not pause during saturation. In simulation, a constant push of 0.05~N\,m leaves the controller without integral action ($K_i=0$) with a permanent error of 0.033~rad (yaw) and 0.028~rad (pitch). With $K_i=1$ this error is gone after about 5--8~s. The price is a slower step response: about 5.8~s with 32\% overshoot, against 3.0~s and 24\% without integral action.
+
+The following section describes the experiments on the AERO~2.
