@@ -77,7 +77,7 @@ I_{k+1}=I_k+T_s\left[K_i(\omega_{d,k}-\omega_k)+K_{\mathrm{aw}}(v_k-v_{\mathrm{r
 
 ![IP controller in the hardware model](figures/hardware_ip_diagram.png)
 
-This is the baseline PD position cascade. There is no optional outer integrator, reference derivative or acceleration feedforward. The course `U_v`/`U_h` trajectory is the saved default, for 60 s.
+This is the PD position cascade with analytical course-reference velocity feedforward. There is no optional outer integrator or reference-acceleration feedforward. The course `U_v`/`U_h` trajectory and its sampled analytical derivative are embedded for 60 s. `Kff=1` enables the velocity contribution; sharp-step diagnostics explicitly use `Kff=0` rather than differentiating their discontinuities.
 
 The QUARC target configuration is copied from the professor's model, with its fixed integration step corrected from **0.1 s to 0.002 s**. The HIL board, channels, voltage units, encoder conversions and zero-voltage startup/termination settings are preserved. Quanser documents these analog outputs as motor voltages in the ±24 V range, so no extra DAC scale factor is introduced. See the [AERO 2 driver documentation](https://docs.quanser.com/quarc/documentation/quanser_aero2_usb.html).
 
@@ -117,7 +117,7 @@ All signed steps converge within the test window without voltage saturation. Sig
 
 ![Offline course-reference tracking](figures/hardware_cascade_offline_course.png)
 
-For the 60 s course reference, ideal-measurement RMS tracking error is 0.09795 rad yaw and 0.05880 rad pitch, with peak voltage 7.49 V. With the course sensor model enabled, measured-error RMS is 0.09793 and 0.05877 rad, with peak voltage 7.63 V. These are surrogate simulation results, not measured hardware performance or a calibrated model of the real sensors.
+For the 60 s course reference with analytical velocity feedforward, ideal-measurement RMS tracking error is 0.00443 rad yaw and 0.00267 rad pitch, with peak voltage 11.96 V. With the course sensor model enabled, true-angle RMS is 0.00449/0.00279 rad and peak voltage is 11.98 V. In the matched sensor-enabled run without feedforward, RMS is 0.09793/0.05877 rad and peak voltage is 7.63 V. Neither run saturates. Better tracking of this smooth input does not establish the 3 s sharp-step settling target: the filtered step response above remains about 5.2 s. These are surrogate simulation results, not measured hardware performance or a calibrated model of the real sensors.
 
 Reproduce the evidence with:
 

@@ -15,6 +15,7 @@ for k=1:6
     r=experiment(model,reference,zeros(6,1),p.step,0,p.stopTime); runs{k}=r;
     noisy=experiment(model,reference,zeros(6,1),p.step,1,p.stopTime); noisyRuns{k}=noisy;
     idealInput=Simulink.SimulationInput(idealModel);
+    idealInput=idealInput.setVariable('Kff',0,'Workspace',idealModel);
     idealInput=idealInput.setVariable('Reference',reference,'Workspace',idealModel);
     idealInput=idealInput.setBlockParameter([idealModel '/Desired orientation'],'Interpolate','off');
     idealInput=idealInput.setModelParameter('StopTime',num2str(p.stopTime));
@@ -117,6 +118,7 @@ function r=experiment(model,reference,state,step,noise,stopTime,interpolate)
 if nargin<7, interpolate=false; end
 mode='off'; if interpolate, mode='on'; end
 input=Simulink.SimulationInput(model);
+input=input.setVariable('Kff',double(interpolate),'Workspace',model);
 input=input.setBlockParameter([model '/Desired orientation'],'Interpolate',mode);
 input=input.setVariable('Reference',reference,'Workspace',model);
 input=input.setVariable('PlantX0',state,'Workspace',model);

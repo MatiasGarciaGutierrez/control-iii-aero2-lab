@@ -42,6 +42,8 @@ Part II uses the original course yaw/pitch trajectory as the common baseline for
 
 Run `setup_project; validate_course_reference; export_course_reference_figures` in MATLAB first. The baseline validation compares the generated reference against every sample from the original course initializer, checks the saved simple/experiment sources and 60 s duration, compares simple and diagnostic model outputs, and records ideal/noisy tracking and voltage metrics. Temporary logging is discarded without saving model changes; the actual QUARC model is never simulated.
 
+The saved position models now include analytical reference-velocity feedforward. `ReferenceRate` stores the derivative of the same smooth course trajectory, and `Kff=1` enables its contribution. Matched comparisons set `Kff` to 0 and 1 with all other settings fixed. Step, disturbance and recovery diagnostics set `Kff=0` explicitly because their discontinuous references are not differentiated. The optional integral design retains its position-reference weight and outer anti-windup. Regenerate the working/exported models with the position, cascade, integral and hardware/offline builders before rerunning validation after a controller change; R2021a exports are validated in R2024b, not in the laboratory release.
+
 To regenerate the compact motor diagnostic and course-baseline plots, the report's tracking-results table and six diagram copies, run from the repository root:
 
 ```sh

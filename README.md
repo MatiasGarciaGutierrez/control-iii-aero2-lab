@@ -63,6 +63,8 @@ Press Run. The motor examples command main +100 and tail -100 rad/s at 0.1 s. Qu
 
 **Questions 4–5 and the optional controller now use the course reference by default.** Press Run for the complete 60 s yaw/pitch trajectory. Double-click **Desired orientation** to see the two From Workspace sources: `U_v` (yaw) and `U_h` (pitch). The exact course time series, including the factor of two, are stored in each model workspace; no initialization script is needed before running a saved model. All Scopes display 60 s.
 
+The position models embed analytical reference velocities in **Desired rates**, with `Kff=1` enabling velocity feedforward. On the same course-sensor test, this reduces the full cascade's yaw/pitch RMS error from 0.09945/0.05969 rad to 0.00915/0.00587 rad; peak voltage is 10.59 V without saturation. Set a consistent `ReferenceRate` when changing a smooth reference. Step and recovery diagnostics use `Kff=0`. `validate_course_reference` makes the matched comparison; `validate_reference_velocity_exports` checks exported dynamics in the installed MATLAB release.
+
 The position experiment copies also default to the course trajectory. Validation scripts explicitly select the separate step, disturbance and recovery tests. Their measured step settling times remain 2.996 s for Question 4 and 3.204–3.210 s for Question 5. Course-trajectory plots show tracking performance, not step settling time.
 
 The optional model adds position integral action and outer anti-windup without replacing Question 5. Nominal settling is 3.042–3.050 s. The separate experiment compares rejection of constant external torques and recovery after temporary voltage-authority loss. See the optional section in the report for the gain derivation and tradeoffs.

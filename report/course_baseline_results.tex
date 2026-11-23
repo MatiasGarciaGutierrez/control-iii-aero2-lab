@@ -1,11 +1,10 @@
 \begin{center}
-\begin{tabular}{llccc}
+\begin{tabular}{lccc}
 \hline
-Controller & Sensors & Yaw RMS (rad) & Pitch RMS (rad) & Peak $|v|$ (V)\\\hline
-Ideal motors & Ideal & 0.09964 & 0.05981 & ---\\
-Full IP cascade & Ideal & 0.09941 & 0.05975 & 6.46\\
-Full IP cascade & Course & 0.09945 & 0.05969 & 6.91\\
-Integral cascade & Course & 0.09943 & 0.05970 & 7.67\\
+Controller & RMS yaw/pitch (rad) & Peak error yaw/pitch (rad) & Peak $|v|$ (V)\\\hline
+IP cascade, without FF & 0.09945/0.05969 & 0.2879/0.1425 & 6.91\\
+IP cascade, with FF & 0.00915/0.00587 & 0.0426/0.0215 & 10.59\\
+Integral cascade, with FF & 0.09686/0.05800 & 0.2742/0.1345 & 12.00\\
 \hline
 \end{tabular}
 \end{center}

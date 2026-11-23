@@ -49,38 +49,46 @@ def main():
     save(fig, 'report_part2_motor_comparison.png')
 
     baseline = loadmat(ROOT / 'results/course_reference_validation.mat', simplify_cells=True)
-    ideal = baseline['runs'][0]
     # The empty ideal-mechanics noise cell keeps scipy's noisyRuns entries as
     # MATLAB structs rather than dictionaries; normalize at the file boundary.
     noisy = baseline['noisyRuns'][1]
     run = {'time': noisy.time, 'data': noisy.data}
-    fig, axes = panels()
-    for index, axis in enumerate(axes):
-        axis.plot(run['time'], run['data'][:, index], ':k', label='Course reference')
-        axis.plot(ideal['time'], ideal['data'][:, index + 2], label='Ideal motors', linewidth=1.6)
-        axis.plot(run['time'], run['data'][:, index + 18], '--',
-                  label='IP cascade, course sensors', linewidth=1.3)
-        axis.set_ylabel(['Yaw [rad]', 'Pitch [rad]'][index])
-        axis.set_xlim(0, 60)
-        axis.legend(frameon=False, fontsize=7)
+    before = baseline['comparisonRuns'][1, 1, 0]
+    fig, axes = plt.subplots(2, 3, figsize=(9, 2.7), layout='constrained')
+    for index in range(2):
+        tracking, error, voltage = axes[index]
+        tracking.plot(run['time'], run['data'][:, index], ':k', label='Course reference')
+        tracking.plot(run['time'], run['data'][:, index + 18], label='With feedforward', linewidth=1.1)
+        tracking.set_ylabel(['Yaw [rad]', 'Pitch [rad]'][index])
+        for record, label, color in [(before, 'Without', '0.6'), (noisy, 'With', 'C0')]:
+            error.plot(record.time, record.data[:, index]-record.data[:, index+18],
+                       label=label, color=color, linewidth=0.9)
+            voltage.plot(record.time, record.data[:, index+14], label=label, color=color, linewidth=0.65)
+        error.set_ylabel('Error [rad]')
+        voltage.set_ylabel(['Main [V]', 'Tail [V]'][index])
+        for axis in axes[index]:
+            axis.set_xlim(0, 60)
+            axis.grid(alpha=0.2)
+            axis.set_xlabel('Time [s]')
+            axis.legend(frameon=False, fontsize=6)
     save(fig, 'report_part2_course_baseline.png')
 
     with (ROOT / 'results/course_reference_metrics.csv').open() as stream:
         metrics = list(csv.DictReader(stream))
-    cases = [('Ideal motors', 'aero2_position_control', 0),
-             ('Full IP cascade', 'aero2_cascade_control', 0),
-             ('Full IP cascade', 'aero2_cascade_control', 1),
-             ('Integral cascade', 'aero2_position_integral', 1)]
+    cases = [('IP cascade, without FF', 'aero2_cascade_control', 0),
+             ('IP cascade, with FF', 'aero2_cascade_control', 1),
+             ('Integral cascade, with FF', 'aero2_position_integral', 1)]
     rows = []
-    for label, model, mode in cases:
+    for label, model, feedforward in cases:
         pair = [row for row in metrics if row['Model'] == model
-                and int(row['MeasurementEffects']) == mode]
+                and int(row['MeasurementEffects']) == 1
+                and int(row['ReferenceFeedforward']) == feedforward]
         yaw, pitch = sorted(pair, key=lambda row: int(row['Axis']))
         voltage = '---' if model == 'aero2_position_control' else f"{float(yaw['PeakVoltage']):.2f}"
-        rows.append(f"{label} & {'Course' if mode else 'Ideal'} & "
-                    f"{float(yaw['TrackingRMS']):.5f} & {float(pitch['TrackingRMS']):.5f} & {voltage}" + r'\\')
-    table = [r'\begin{center}', r'\begin{tabular}{llccc}', r'\hline',
-             r'Controller & Sensors & Yaw RMS (rad) & Pitch RMS (rad) & Peak $|v|$ (V)\\\hline',
+        rows.append(f"{label} & {float(yaw['TrackingRMS']):.5f}/{float(pitch['TrackingRMS']):.5f} & "
+                    f"{float(yaw['PeakError']):.4f}/{float(pitch['PeakError']):.4f} & {voltage}" + r'\\')
+    table = [r'\begin{center}', r'\begin{tabular}{lccc}', r'\hline',
+             r'Controller & RMS yaw/pitch (rad) & Peak error yaw/pitch (rad) & Peak $|v|$ (V)\\\hline',
              *rows, r'\hline', r'\end{tabular}', r'\end{center}']
     (ROOT / 'report/course_baseline_results.tex').write_text('\n'.join(table) + '\n')
 

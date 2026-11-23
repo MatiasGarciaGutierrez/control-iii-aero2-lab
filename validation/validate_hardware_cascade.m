@@ -99,6 +99,7 @@ end
 
 function r=runOffline(model,uv,uh,stop,noise,step,interpolate)
 in=Simulink.SimulationInput(model);
+in=in.setVariable('Kff',double(interpolate),'Workspace',model);
 in=in.setVariable('U_v',uv,'Workspace',model);
 in=in.setVariable('U_h',uh,'Workspace',model);
 in=in.setVariable('meas_on',noise,'Workspace',model);

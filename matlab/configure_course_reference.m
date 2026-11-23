@@ -2,8 +2,9 @@ function configure_course_reference(model,experiment)
 %CONFIGURE_COURSE_REFERENCE Use the supplied 60 s trajectory as the saved default.
 % Preserve all destinations, controller blocks and existing Scope styling.
 if nargin<2, experiment=false; end
-[U_v,U_h,reference]=aero2_course_reference;
+[U_v,U_h,reference,referenceRate]=aero2_course_reference;
 workspace=get_param(model,'ModelWorkspace');
+assignin(workspace,'ReferenceRate',referenceRate); assignin(workspace,'Kff',1);
 source=[model '/Desired orientation'];
 position=get_param(source,'Position'); handles=get_param(source,'PortHandles');
 line=get_param(handles.Outport(1),'Line'); destinations=get_param(line,'DstPortHandle');
@@ -39,6 +40,7 @@ else
     add_line(source,'Yaw then pitch/1','Desired angles/1','autorouting','on');
 end
 for k=1:numel(paths), add_line(model,'Desired orientation/1',paths{k},'autorouting','on'); end
+configure_reference_velocity(model);
 set_param(model,'StopTime','60');
 scopes=find_system(model,'LookUnderMasks','all','BlockType','Scope');
 for k=1:numel(scopes)

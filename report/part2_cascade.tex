@@ -11,21 +11,21 @@ The motor controllers add two integral states. All gains are retained from the p
 \begin{equation}
 \ddot q-a=M_q^{-1}\Gamma\bigl[s(\omega)-s(\omega_d)\bigr].
 \end{equation}
-Using the common 60 s course trajectory, the true-angle tracking results are:
+On the same 60 s course trajectory with the supplied sensor effects, enabling reference-velocity feedforward (FF) while retaining all gains gives:
 \input{course_baseline_results}
-RMS is evaluated over the full 60 s. The course trajectory is tracked without voltage saturation, but lag remains because desired-rate/acceleration feedforward is absent. Small RMS differences between controllers do not establish general superiority. The trajectory's smoothing constant $T_r$ is not the closed-loop settling time. Supplementary ideal-sensor step tests give 3.204--3.210 s settling, about 7\% above the 3 s target, without overshoot; these steps are used only to assess the settling specification.
+Errors use true plant angles over the full 60 s. Only the reference-velocity channel changes in the paired IP-cascade comparison. Acceleration feedforward is absent, so reference acceleration still forces the error. Supplementary steps disable FF and retain 3.204--3.210 s settling without overshoot; the course smoothing constant is not a settling-time measurement.
 \begin{center}
 \includegraphics[width=\linewidth]{report_part2_course_baseline.png}
-\reportcaption{Original course yaw/pitch references and simulated tracking with ideal motors and the IP cascade using the supplied sensor effects.}
+\reportcaption{Course-reference tracking with FF (left), and matched tracking-error and motor-voltage comparisons without/with FF (middle/right).}
 \end{center}
 
 \subsection*{Optional: position integral action}
 Add an acceleration-valued integral contribution $J$. Matching each axis denominator to $(s+\lambda)^3$ yields
 \begin{equation}
-\dot J=K_i^qe,\qquad a=K_p^q(bq_d-q)-K_d^q\dot q+J,
+\dot J=K_i^qe,\qquad a=K_p^q(bq_d-q)+K_d^q(\dot q_d-\dot q)+J,
 \quad K_p^q=3\lambda^2I_2,\quad K_d^q=3\lambda I_2,\quad K_i^q=\lambda^3I_2,\quad b=\tfrac13.
 \end{equation}
-With $\lambda=1.9446406$ s$^{-1}$, the ideal reference transfer function reduces to $\lambda^2/(s+\lambda)^2$, preserving the nominal 3 s step response. Both outer integrators pause during either motor's voltage saturation. The same course trajectory gives the RMS errors shown above; integral action does not eliminate moving-reference lag. Supplementary steps settle in 3.042--3.050 s. Under constant unknown yaw/pitch torques of $+0.010/-0.008$ N\,m, supplementary constant-setpoint tests give PD errors of $-0.004166/+0.002953$ rad; integral action removes that steady offset in the ideal simulation.
+With $\lambda=1.9446406$ s$^{-1}$ and the velocity channel disabled for sharp steps, the ideal reference transfer function is $\lambda^2/(s+\lambda)^2$; simulated settling is 3.042--3.050 s. Both outer integrators pause during voltage saturation. The reference weight is retained, so the integral design is not equivalent to the unweighted PD tracker. Supplementary constant-torque tests confirm removal of steady offsets; integral action is used for disturbance rejection rather than assumed to improve moving-reference tracking.
 
 \subsection*{Experimental status and model differences}
 No physical AERO 2 measurements are available, so a simulation--experiment comparison, including the integral controller, cannot yet be established. The HIL-free hardware-interface surrogate is also evaluated on the same course trajectory. Its supplementary steps give 5.220--5.222 s settling and 2.55--2.82\% overshoot, failing the 3 s target; rate-estimation delay affects damping feedback and nonlinear cancellation. Experimental validation remains pending professor review and physical calibration.
