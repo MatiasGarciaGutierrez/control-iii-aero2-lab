@@ -2,9 +2,9 @@
 The outer position controller and nonlinear inverse generate desired rotor speeds; two IP loops with anti-windup generate the limited motor voltages. With $x=[q^\mathsf{T},\dot q^\mathsf{T},\omega^\mathsf{T}]^\mathsf{T}$, the plant is
 \begin{equation}
 \boxed{\dot x=\begin{bmatrix}
-\dot q\\M_q^{-1}[\Gamma s(\omega)-c_q-g_q]\\-5.78\omega
+\dot q\\M_q^{-1}[\Gamma s(\omega)-c_q-g_q]\\-a_m\omega
 \end{bmatrix}
-+\begin{bmatrix}0_{2\times2}\\0_{2\times2}\\96.532I_2\end{bmatrix}v},
++\begin{bmatrix}0_{2\times2}\\0_{2\times2}\\b_mI_2\end{bmatrix}v},
 \qquad y=\begin{bmatrix}I_2&0_{2\times4}\end{bmatrix}x.
 \end{equation}
 The motor controllers add two integral states. All gains are retained from the preceding designs. Finite rotor tracking introduces the acceleration discrepancy
@@ -20,10 +20,10 @@ RMS is evaluated over the full 60 s. The course trajectory is tracked without vo
 \end{center}
 
 \subsection*{Optional: position integral action}
-Add an acceleration-valued integral contribution $J$:
+Add an acceleration-valued integral contribution $J$. Matching each axis denominator to $(s+\lambda)^3$ yields
 \begin{equation}
 \dot J=K_i^qe,\qquad a=K_p^q(bq_d-q)-K_d^q\dot q+J,
-\quad (K_p^q,K_d^q,K_i^q)=(3\lambda^2,3\lambda,\lambda^3)I_2,\quad b=\tfrac13.
+\quad K_p^q=3\lambda^2I_2,\quad K_d^q=3\lambda I_2,\quad K_i^q=\lambda^3I_2,\quad b=\tfrac13.
 \end{equation}
 With $\lambda=1.9446406$ s$^{-1}$, the ideal reference transfer function reduces to $\lambda^2/(s+\lambda)^2$, preserving the nominal 3 s step response. Both outer integrators pause during either motor's voltage saturation. The same course trajectory gives the RMS errors shown above; integral action does not eliminate moving-reference lag. Supplementary steps settle in 3.042--3.050 s. Under constant unknown yaw/pitch torques of $+0.010/-0.008$ N\,m, supplementary constant-setpoint tests give PD errors of $-0.004166/+0.002953$ rad; integral action removes that steady offset in the ideal simulation.
 

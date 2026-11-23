@@ -2,6 +2,8 @@
 
 The concise submission-style report is maintained in [LaTeX](../report/main.tex), with [build and evidence instructions](../report/README.md) and a committed [PDF](../report/lab2_report.pdf). Separate parts cover Part I, Questions 1–3, and Part II, Questions 1–5, optional position integral action and outstanding experimental work. Appendices A and B show the corresponding Simulink diagram exports. The detailed implementation record below remains available; test counts and software compatibility checks are kept here rather than in the academic report.
 
+The academic report derives models, nonlinear cancellation, coordinate transformations, zero dynamics and feedback gains symbolically before substituting the supplied numerical parameters for implementation and simulation. The numerical implementation record below retains explicit coefficients for reproducing the models.
+
 ## Part I — Question 1(a): nonlinear inverted pendulum
 
 Reference: the laboratory guide, page 2, Question 1(a). The angle is measured from the **upright** vertical. The cart dynamics are excluded by the exercise's assumption.

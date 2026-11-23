@@ -1,46 +1,50 @@
 \section*{Question 3 --- Non-isothermal CSTR}
 \answer{(a) State-space model}
-Let $x_1=C_A$ (mol/L), $x_2=T$ (K), $u=T_c$ (K), and $\kappa(T)=7.2\times10^{10}e^{-8750/T}$ (min$^{-1}$). Using seconds as the time unit, the supplied balances become
+Define $\nu=q/V$, $\beta=-\Delta H/(\rho C_p)$, $\gamma=UA/(\rho C_pV)$ and $\kappa(T)=k_0e^{-E/(R_gT)}$, with all rates expressed in seconds. For $x_1=C_A$, $x_2=T$, input $u=T_c$ and output $y=T$,
 \begin{equation}
 x=\begin{bmatrix}C_A\\T\end{bmatrix},\qquad
-\boxed{\dot x=\frac{1}{60}
-\begin{bmatrix}1-x_1-\kappa(x_2)x_1\\350-2x_2+200\kappa(x_2)x_1\end{bmatrix}
-+\begin{bmatrix}0\\1/60\end{bmatrix}u},\qquad
+\boxed{\dot x=
+\begin{bmatrix}\nu(C_{Af}-x_1)-\kappa(x_2)x_1\\\nu(T_f-x_2)+\beta\kappa(x_2)x_1-\gamma x_2\end{bmatrix}
++\begin{bmatrix}0\\\gamma\end{bmatrix}u},\qquad
 y=\begin{bmatrix}0&1\end{bmatrix}x.
 \end{equation}
-The factor $1/60$ converts the guide's minute-based rates to seconds. The nonlinear plant integrates concentration and temperature separately.
+The plant integrates concentration and temperature separately (Appendix~A).
 
 \answer{(b) Linearization, validity and zero dynamics}
-For $y=T$, the input appears after one derivative:
+The input appears after one output derivative:
 \begin{equation}
-\dot y=\frac{350-2T+200\kappa(T)C_A+u}{60}.
-\quad
-\boxed{u=60v-350+2T-200\kappa(T)C_A.}
+\dot y=\nu(T_f-T)+\beta\kappa(T)C_A+\gamma(u-T).
 \end{equation}
-Thus $\dot y=v$. Choose $z_1=T$ and the internal coordinate $\eta=C_A$:
+Choose
 \begin{equation}
-\dot z_1=v,\qquad \dot\eta=\frac{1-[1+\kappa(z_1)]\eta}{60}.
+\boxed{u=T+\frac{v-\nu(T_f-T)-\beta\kappa(T)C_A}{\gamma}}
+\quad\Longrightarrow\quad\dot y=v.
 \end{equation}
-The relative degree is $1<2$, leaving one internal state. The coordinate change is an invertible permutation; the input coefficient $1/60$ is constant. The law is defined on the physical temperature domain $T>0$, with $C_A\ge0$; practical operation also requires an achievable coolant temperature.
+The new coordinates $z_1=T$, $\eta=C_A$ satisfy
+\begin{equation}
+\dot z_1=v,\qquad \dot\eta=\nu C_{Af}-[\nu+\kappa(z_1)]\eta.
+\end{equation}
+The relative degree is $1<2$, leaving one internal state. The coordinate change is an invertible permutation. For $\gamma\ne0$, the law is defined for $T>0$, $C_A\ge0$; practical operation also requires an achievable coolant temperature.
 
-To obtain the zero dynamics around the desired temperature, hold $T\equiv330$ K (equivalently, set the shifted output $T-330$ to zero). Since $\kappa(330)=0.219760$ min$^{-1}$,
+Set the shifted output $T-T_d$ to zero, so that $T\equiv T_d$. The zero dynamics are
 \begin{equation}
-\dot\eta=\frac{1-1.219760\eta}{60},\qquad
-\eta^*=0.819833\ \mathrm{mol/L},\qquad
-\eta(t)=\eta^*+[\eta(0)-\eta^*]e^{-0.0203293t}.
+\dot\eta=\nu C_{Af}-[\nu+\kappa(T_d)]\eta,\quad
+\eta^*=\frac{\nu C_{Af}}{\nu+\kappa(T_d)},\quad
+\eta(t)=\eta^*+[\eta(0)-\eta^*]e^{-[\nu+\kappa(T_d)]t}.
 \end{equation}
-The internal equilibrium is asymptotically stable, so the reactor is minimum phase in this operating domain. Its concentration time constant is 49.19 s.
+For $\nu>0$ and $\kappa(T_d)\ge0$, the internal equilibrium is asymptotically stable; the reactor is minimum phase in this domain.
 
 \answer{(c) Implementation}
-The linearizing law receives $C_A$, $T$ and virtual input $v$ (K/s), and commands coolant temperature. The original nonlinear balances remain unchanged; both states are fed back directly (Appendix~A).
+The linearizing law receives $C_A$, $T$ and virtual temperature rate $v$, and commands $T_c$. Both states are fed back; the original nonlinear balances are retained.
 
 \answer{(d) Temperature tracking with 5 s settling}
-For a constant reference $T_d$, choose
+For constant $T_d$, choose $v=\lambda(T_d-T)$. Then $\dot e=-\lambda e$ and $e(t)=e(0)e^{-\lambda t}$, giving
 \begin{equation}
-v=\lambda(T_d-T),\qquad
-\boxed{\lambda=\frac{\ln50}{5}=0.782405\ \mathrm{s}^{-1}.}
+\boxed{\lambda=\frac{-\ln\varepsilon}{T_s}},\qquad
+\varepsilon=0.02,\ T_s=5\ \mathrm{s}
+\quad\Longrightarrow\quad\lambda=0.782405\ \mathrm{s}^{-1}.
 \end{equation}
-The error satisfies $\dot e=-\lambda e$, hence $T_s=\ln50/\lambda=5$ s. Initially, $T=310$ K and $C_A=[1+\kappa(310)]^{-1}=0.961796$ mol/L. The reference changes to 330 K at $t=1$ s. The simulation runs for 180 s using \texttt{ode45}, maximum step 0.02 s and relative/absolute tolerances $10^{-8}/10^{-10}$.
+For simulation, $\nu=\gamma=1/60$ s$^{-1}$, $k_0=7.2\times10^{10}/60$ s$^{-1}$, $E/R_g=8750$ K, $\beta=200$ K\,L/mol, $C_{Af}=1$ mol/L and $T_f=350$ K. At $T_d=330$ K, $\eta^*=0.819833$ mol/L and the internal time constant is $[\nu+\kappa(T_d)]^{-1}=49.19$ s. Initially $T=310$ K and $C_A=\nu C_{Af}/[\nu+\kappa(310)]=0.961796$ mol/L. The reference changes to 330 K at 1 s. Simulate 180 s using \texttt{ode45}, maximum step 0.02 s and relative/absolute tolerances $10^{-8}/10^{-10}$.
 \begin{center}
 \includegraphics[width=0.95\linewidth]{report_cstr_response.png}
 \reportcaption{Simulated temperature tracking, concentration and coolant command. Temperature and concentration use different time scales.}

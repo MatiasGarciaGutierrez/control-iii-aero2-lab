@@ -37,7 +37,7 @@ For a constant desired configuration $q_d$, choose
 a=K_q(q_d-q)-D_q\dot q,\qquad
 \ddot e+D_q\dot e+K_qe=0,\quad e=q_d-q.
 \end{equation}
-For identical critically damped axes, the 2\% condition $(1+\lambda T_s)e^{-\lambda T_s}=0.02$ with $T_s=3$ s gives $\lambda=5.83392/3=1.9446406$ s$^{-1}$. Thus
+Matching each axis polynomial to $(s+\lambda)^2$ gives $K_q=\lambda^2I_2$, $D_q=2\lambda I_2$. For a relative band $\varepsilon$, choose $\lambda=\tau_\varepsilon/T_s$, where $(1+\tau_\varepsilon)e^{-\tau_\varepsilon}=\varepsilon$. For implementation, $\varepsilon=0.02$ and $T_s=3$ s give $\lambda=1.9446406$ s$^{-1}$ and
 \begin{equation}
 \boxed{K_q=\lambda^2I_2=3.7816269I_2,\qquad
 D_q=2\lambda I_2=3.8892811I_2.}
