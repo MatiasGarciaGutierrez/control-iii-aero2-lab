@@ -18,14 +18,34 @@
 \begin{document}
 \begin{center}
 {\Large\bfseries Automatic Control III --- Laboratory 2}\\[2pt]
-{\normalsize Report: Parts I and II \quad---\quad Mat\'{i}as Garc\'{i}a}
+{\normalsize Mat\'{i}as Garc\'{i}a \qquad Snoeijink Lars}
 \end{center}
-\textbf{Part I: theoretical activity.} Questions 1--3 follow the laboratory guide, pp.~2--3. Results are obtained by numerical simulation; settling time uses a 2\% error band.
+\part*{Part I --- Theoretical activity}
+\renewcommand{\theequation}{I.\arabic{equation}}
+\renewcommand{\thereportfigure}{I.\arabic{reportfigure}}
 \input{question1}
 \clearpage
 \input{question2}
 \clearpage
 \input{question3}
-\par\medskip
-\textbf{Part II --- Quanser AERO 2.} To be documented in the next revision.
+\clearpage
+\part*{Part II --- Quanser AERO 2}
+\setcounter{equation}{0}
+\setcounter{reportfigure}{0}
+\renewcommand{\theequation}{II.\arabic{equation}}
+\renewcommand{\thereportfigure}{II.\arabic{reportfigure}}
+\input{part2_baseline}
+\input{part2_motors}
+\clearpage
+\input{part2_mechanics}
+\clearpage
+\input{part2_cascade}
+\clearpage
+\input{experimental_validation}
+\clearpage
+\input{simulink_diagrams}
+\clearpage
+\input{part2_diagrams}
+\clearpage
+\input{lab_records}
 \end{document}

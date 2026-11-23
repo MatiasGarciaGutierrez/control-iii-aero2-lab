@@ -1,14 +1,16 @@
 function metrics = validate_hardware_cascade
 %VALIDATE_HARDWARE_CASCADE Run ONLY the HIL-free offline surrogate.
-project=setup_project; p=cascade_parameters;
+project=setup_project; p=cascade_parameters; hp=hardware_cascade_parameters;
 hardware='aero2_hardware_cascade'; baseline='aero2_cascade_control';
 load_system(fullfile(project.simulink,[hardware '.slx']));
 load_system(fullfile(project.simulink,[baseline '.slx']));
-for variable={'Kq','Dq','Kp','Ki','Kaw'}
+for variable={'Kp','Ki','Kaw'}
     wh=get_param(hardware,'ModelWorkspace'); wb=get_param(baseline,'ModelWorkspace');
     assert(isequal(getVariable(wh,variable{1}),getVariable(wb,variable{1})), ...
         'Hardware gains differ from the Question 5 controller.');
 end
+assert(getVariable(wh,'Kq')==hp.kp && getVariable(wh,'Dq')==hp.kd, ...
+    'Hardware position gains differ from the selected filter-aware candidate.');
 root=sfroot;
 ch=root.find('-isa','Stateflow.EMChart','Path',[hardware '/Mechanical inverse']);
 cb=root.find('-isa','Stateflow.EMChart','Path',[baseline '/Mechanical inverse']);
@@ -88,7 +90,8 @@ writetable(tracking,fullfile(folder,'tracking.csv'));
 writetable(refinement,fullfile(folder,'refinement.csv'));
 disp(metrics); disp(tracking); disp(refinement);
 fprintf('Offline integrity/convergence checks passed. NO hardware model was run.\n');
-fprintf('3 s timing gate: %d/%d passed; see TimingMet (retained gains + hardware filters).\n', ...
+assert(all(metrics.TimingMet),'Filter-aware candidate misses the declared timing gate.');
+fprintf('3 s timing gate: %d/%d passed; see TimingMet (filter-aware gains).\n', ...
     sum(metrics.TimingMet),height(metrics));
 end
 
@@ -99,6 +102,7 @@ end
 
 function r=runOffline(model,uv,uh,stop,noise,step,interpolate)
 in=Simulink.SimulationInput(model);
+in=in.setVariable('Kff',double(interpolate),'Workspace',model);
 in=in.setVariable('U_v',uv,'Workspace',model);
 in=in.setVariable('U_h',uh,'Workspace',model);
 in=in.setVariable('meas_on',noise,'Workspace',model);

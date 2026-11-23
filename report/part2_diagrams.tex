@@ -1,0 +1,32 @@
+\setcounter{reportfigure}{0}
+\renewcommand{\thereportfigure}{B.\arabic{reportfigure}}
+\section*{Appendix B --- Part II: Simulink diagrams}
+\subsection*{Questions 1 and 2: motor-speed control}
+\begin{center}
+\includegraphics[width=\linewidth,height=0.34\textheight,keepaspectratio]{question_1_diagram.png}
+\reportcaption{Simulink diagram export of the PI rotor-speed loops with voltage saturation.}
+\end{center}
+\begin{center}
+\includegraphics[width=\linewidth,height=0.34\textheight,keepaspectratio]{question_2_diagram.png}
+\reportcaption{Simulink diagram export of the IP rotor-speed loops with anti-windup.}
+\end{center}
+\clearpage
+\subsection*{Questions 3 and 4: mechanical linearization and position control}
+\begin{center}
+\includegraphics[width=\linewidth,height=0.34\textheight,keepaspectratio]{question_3_diagram.png}
+\reportcaption{Simulink diagram export of mechanical input-output linearization under ideal rotor-speed tracking.}
+\end{center}
+\begin{center}
+\includegraphics[width=\linewidth,height=0.34\textheight,keepaspectratio]{question_4_diagram.png}
+\reportcaption{Simulink diagram export of yaw/pitch position feedback around the linearized mechanics.}
+\end{center}
+\clearpage
+\subsection*{Question 5 and optional position integral action}
+\begin{center}
+\includegraphics[width=\linewidth,height=0.34\textheight,keepaspectratio]{question_5_diagram.png}
+\reportcaption{Simulink diagram export of the complete position, nonlinear inverse and IP motor cascade.}
+\end{center}
+\begin{center}
+\includegraphics[width=\linewidth,height=0.34\textheight,keepaspectratio]{position_integral_controller.png}
+\reportcaption{Simulink diagram export of the optional position integral controller, including reference weighting and saturation-dependent integration.}
+\end{center}

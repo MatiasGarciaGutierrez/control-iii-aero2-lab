@@ -1,6 +1,8 @@
 # Control III laboratory report — Parts I and II
 
-The concise submission-style report is now maintained in [LaTeX](../report/main.tex), with [build and evidence instructions](../report/README.md). Its current draft covers Part I, Questions 1–3; the detailed implementation record below remains available. Test counts and software compatibility checks are kept here rather than in the academic report.
+The concise submission-style report is maintained in [LaTeX](../report/main.tex), with [build and evidence instructions](../report/README.md) and a committed [PDF](../report/lab2_report.pdf). Separate parts cover Part I, Questions 1–3, and Part II, Questions 1–5, optional position integral action and outstanding experimental work. Appendices A and B show the corresponding Simulink diagram exports. The detailed implementation record below remains available; test counts and software compatibility checks are kept here rather than in the academic report.
+
+The academic report derives models, nonlinear cancellation, coordinate transformations, zero dynamics and feedback gains symbolically before substituting the supplied numerical parameters for implementation and simulation. The numerical implementation record below retains explicit coefficients for reproducing the models.
 
 ## Part I — Question 1(a): nonlinear inverted pendulum
 
@@ -239,9 +241,11 @@ The Scope audit checks all seven activity models and their exports in R2024b. Re
 
 The simulation comparisons and recovery generators remain in the experiment copies. Questions 4–5 and the optional controller default to the course trajectory. Validation explicitly selects the step, disturbance and recovery inputs used for the performance tables below. A separate [hardware-interface port](hardware.md) now connects Question 5 to the professor's QUARC interface. Its offline results include measurement-filter delay; actual hardware validation still requires professor review and laboratory checks.
 
-### Default course reference for position control
+### Common experimental baseline: original course reference
 
 **Pressing Run in Question 4, Question 5 or the optional model now runs the supplied 60 s angle trajectory.** Their saved experiment copies use the same default trajectory. Questions 1–2 retain motor-speed inputs, and Question 3 retains its virtual-acceleration input.
+
+This original trajectory is the primary baseline for every end-to-end position experiment, including the filtered offline hardware surrogate. Use the same time samples, scale, interpolation and initial rest state when comparing controllers. The supplied `meas_on=1` quantization/noise setting is included for complete cascades; ideal-measurement runs isolate other effects. Angle references cannot be applied directly as rotor-speed or acceleration commands. Those subsystem tests, custom steps and disturbance/recovery cases are supplementary diagnostics and are identified separately in the academic report.
 
 ![Course yaw and pitch sources inside Desired orientation](figures/course_reference_source.png)
 
@@ -249,13 +253,26 @@ Double-click **Desired orientation** in a simple position model. Its two **From 
 
 ![Default course-reference tracking in all three position models](figures/course_reference_tracking.png)
 
-| Model, ideal measurements | Yaw tracking-error RMS | Pitch tracking-error RMS |
+| Model, ideal measurements, without velocity feedforward | Yaw tracking-error RMS | Pitch tracking-error RMS |
 |---|---:|---:|
 | Question 4: ideal motors | 0.09964 rad | 0.05981 rad |
 | Question 5: full motor cascade | 0.09941 rad | 0.05975 rad |
 | Optional position integral | 0.09956 rad | 0.05977 rad |
 
-These are RMS errors over the full 60 s trajectory. The small differences do not establish that one controller is better in general. All three show tracking lag with the existing position/rate feedback. The course's smoothing time `Tr` is a property of the desired trajectory; it is not the controller's settling time.
+These values describe the preceding controller without reference-velocity feedforward. The saved models now add `Dq*dq_d`, using analytical derivatives of the original course trajectory, sampled and interpolated on the same 2 ms grid. The reference angles, gains, initial states, measurement settings, motor loops and voltage limits are unchanged. `ReferenceRate` holds the rate matrix; `Kff` selects 0 (prior behavior) or 1 (feedforward). Custom references need a consistent rate signal; supplementary sharp steps, disturbances and recovery tests explicitly use `Kff=0`.
+
+The matched course-sensor comparison uses true plant angles throughout:
+
+| Full IP cascade | Yaw/pitch RMS (rad) | Yaw/pitch peak error (rad) | Peak voltage |
+|---|---:|---:|---:|
+| Without reference-velocity feedforward | 0.09945 / 0.05969 | 0.2879 / 0.1425 | 6.91 V |
+| With reference-velocity feedforward | 0.00915 / 0.00587 | 0.0426 / 0.0215 | 10.59 V |
+
+Neither run saturates. With `a=Kq*(q_d-q)+Dq*(dq_d-dq)`, the ideal error equation is `ddot(e)+Dq*dot(e)+Kq*e=ddot(q_d)`; the additional `Dq*dot(q_d)` forcing of the prior controller is removed. Acceleration feedforward is not included. The optional weighted integral controller retains its weight `b=1/3` and saturation-dependent integration: its course RMS remains 0.09686/0.05800 rad with velocity feedforward, so it is retained for constant-disturbance rejection rather than presented as a better trajectory tracker.
+
+![Common course baseline with ideal motors and the sensor-enabled cascade](figures/report_part2_course_baseline.png)
+
+All course metrics use the full 60 s trajectory. The course's smoothing time `Tr` is a property of the desired trajectory, not the controller's settling time. The matching step diagnostics with velocity feedforward disabled retain 2.996 s ideal-motor settling, 3.204–3.210 s full-cascade settling and 3.042–3.050 s weighted-integral settling. The filtered surrogate remains at about 5.2 s; improved smooth-reference tracking does not establish the missing step specification.
 
 The numerical step specifications are still tested separately. Validation overrides only the experiment reference and run duration for those cases; it does not change the saved course-reference defaults or add selectors to the simple diagrams.
 
@@ -268,7 +285,7 @@ validate_course_reference;
 export_course_reference_figures;
 ```
 
-The reference check executes the original course initializer in an isolated function workspace and compares every generated sample, then verifies the delivered references and default trajectories. Original course files are not modified.
+The reference check executes the original course initializer in an isolated function workspace and compares every generated sample, including timestamp, axis order and scaling. It verifies the saved simple/experiment sources, interpolation and 60 s duration, compares their baseline responses using temporary logging, and records ideal/noisy true-angle errors separately from measured-angle errors. It also checks the HIL-free filtered surrogate on the identical trajectory. Original course files and saved models are not modified; no QUARC hardware model is executed. Raw baseline metrics and recordings are in `results/course_reference_metrics.csv` and `results/course_reference_validation.mat`.
 
 ## Preparation — Check the supplied simulator
 
@@ -640,7 +657,7 @@ The next controller can ask for a body acceleration without directly handling gr
 Question 4 below chooses an acceleration of the form
 
 ```math
-a=K_p^q(q_d-q)-K_d^q\dot q.
+a=K_p^q(q_d-q)+K_d^q(\dot q_d-\dot q).
 ```
 
 The first term accelerates toward the desired orientation; the second brakes according to angular velocity. Since the compensated mechanics gives $\ddot q=a$, the result is
@@ -746,10 +763,10 @@ We retain Question 3's ideal motor-tracking assumption. This question closes the
 Question 3 gives $\ddot q=a$. We now calculate $a$ from the position error and angular velocity:
 
 ```math
-a=K_p^q(q_d-q)-K_d^q\dot q.
+a=K_p^q(q_d-q)+K_d^q(\dot q_d-\dot q).
 ```
 
-The proportional term accelerates toward the target. The rate term provides braking. The nonlinear inverse then converts this desired body acceleration into the required main/tail rotor speeds.
+The proportional term accelerates toward the target. Measured-rate feedback provides braking, and the analytically generated reference rate reduces moving-reference lag. The nonlinear inverse converts this desired acceleration into main/tail rotor speeds. Sharp-step diagnostics disable the reference-rate contribution.
 
 For a constant target, the error $e=q_d-q$ obeys
 
@@ -788,7 +805,7 @@ Desired yaw/pitch → position/rate feedback → desired acceleration a
                  → nonlinear inverse → rotor speeds → ideal-speed mechanics
 ```
 
-The **Position error** block forms $q_d-q$. **Position gain** multiplies it by `Kq`; **Rate feedback gain** multiplies $\dot q$ by `Dq`. **Desired acceleration** subtracts the rate contribution. The inverse, mechanical state and angle/rate feedback are inherited from Question 3.
+The **Position error** block forms $q_d-q$. **Position gain** multiplies it by `Kq`; **Rate feedback gain** multiplies $\dot q$ by `Dq`. **Desired acceleration** subtracts measured-rate feedback and adds **Reference velocity feedforward**, `Kff*Dq*dq_d`, from the embedded **Desired rates** source. The inverse, mechanical state and angle/rate feedback are inherited from Question 3.
 
 | Setting | Value |
 |---|---|
@@ -950,19 +967,19 @@ Across all signed sensor tests, final true-error RMS stays below 0.000440 rad fo
 
 ### Supplied smooth reference
 
-The saved simple and experiment models now use the original initialization script's 60 s references by default, including its factor of two. The validation script uses the same shared generator. This tests tracking; it does not establish step settling time. The controller still uses position and measured-velocity feedback, with no desired-velocity or acceleration feedforward.
+The saved simple and experiment models use the original initialization script's 60 s references, including its factor of two, with analytical reference-velocity feedforward enabled. The validation script uses the same shared generator. This tests tracking; it does not establish step settling time. Reference-acceleration feedforward is not included.
 
 ![Supplied smooth trajectory and tracking errors](figures/cascade_smooth_tracking.png)
 
 | Tracking result over the full 60 s | Ideal sensors | Noise and quantization |
 |---|---:|---:|
-| Yaw error RMS | 0.09941 rad | 0.09945 rad |
-| Pitch error RMS | 0.05975 rad | 0.05969 rad |
-| Peak absolute yaw error | 0.2866 rad | 0.2879 rad |
-| Peak absolute pitch error | 0.1407 rad | 0.1425 rad |
-| Peak applied voltage | 6.47 V | 6.92 V |
+| Yaw error RMS | 0.00856 rad | 0.00915 rad |
+| Pitch error RMS | 0.00526 rad | 0.00587 rad |
+| Peak absolute yaw error | 0.0425 rad | 0.0426 rad |
+| Peak absolute pitch error | 0.0220 rad | 0.0215 rad |
+| Peak applied voltage | 10.38 V | 10.59 V |
 
-Signals and integrators remain bounded, and peak absolute pitch stays below 0.575 rad (32.95°). There is visible tracking lag. Passing the constant-step specification does not imply accurate tracking of a changing reference. Trajectory feedforward would be a separate extension, not part of this implementation.
+Signals and integrators remain bounded, and peak absolute pitch stays below 0.582 rad (33.35°), without saturation. The matched comparison in the common-baseline section isolates the improvement from velocity feedforward. Residual errors include reference-acceleration forcing and finite motor bandwidth. Passing a constant-step specification alone does not establish moving-reference accuracy.
 
 **Conclusion:** the complete simulated cascade meets the nominal angle-step timing criterion with the original gains, while respecting voltage and pitch limits. Sensor effects leave small residual errors; moving references show lag. The next required stage is professor review before section-by-section hardware validation. The optional position integrator is developed separately below; it does not replace this baseline.
 
@@ -1029,7 +1046,7 @@ We also choose $b=1/3$. The ideal reference-to-angle transfer function becomes
 
 This preserves the original ideal 3 s step response from rest. The additional pole remains part of the internal and disturbance dynamics; it has not disappeared from the system. The matching is nominal and does not guarantee an identical response with finite motor tracking or saturation.
 
-[The parameter function](../matlab/parameters/position_integral_parameters.m) stores the gains. The diagram uses `Kref=b*Kpos`, so the acceleration sum is `Kref*q_d - Kpos*q - Dpos*dq + J`.
+[The parameter function](../matlab/parameters/position_integral_parameters.m) stores the gains. The diagram uses `Kref=b*Kpos`, so the acceleration sum is `Kref*q_d - Kpos*q - Dpos*dq + J + Kff*Dpos*dq_d`. The step derivation and tests in this section use `Kff=0`; the course comparison with `Kff=1` is reported in the common-baseline section.
 
 | Parameter | Value |
 |---|---:|
@@ -1169,7 +1186,7 @@ Settling time is measured from the command change until the response enters and 
 
 Controller-performance results use ideal measurements and the supplied simplified model. Figures are actual Simulink diagram exports or plots of logged signals, not native Scope-window screenshots. The original course files are unchanged.
 
-Validation was performed in MATLAB R2024b. The models include R2021a exports tested in R2024b; actual execution in R2021a and physical hardware testing remain unverified.
+Offline validation was performed in MATLAB R2024b, including R2021a exports executed in R2024b. Physical course-tracking screenshots are now documented separately; runtime release, build revision and exact loaded parameters are not archived.
 
 
 ## Hardware-interface port of the full position cascade
@@ -1182,13 +1199,15 @@ This is a diagram export, not a hardware screenshot. For simulation on this Mac,
 
 ![Offline response including the hardware measurement filters](figures/hardware_cascade_offline_steps.png)
 
-The template estimates body rates with a 10 rad/s second-order filter and filters rotor speed at 180 rad/s. With these filters and our retained gains, signed angle steps settle in **5.220–5.222 s**, with 2.55–2.82% overshoot and peak voltage 22.45 V. They converge without saturation, but **fail the 3 s ±20% timing gate**. This differs from Question 5's approximately 3.2 s because estimated rates introduce additional dynamics into damping feedback and mechanical compensation. Estimator-aware tuning remains necessary before claiming the timing target.
+The template stores a 10 rad/s, damping 0.8 second-order low-pass filter. The surrogate uses `H(s)=100/(s^2+16s+100)` with estimated rate `sH(s)q`, raw angle feedback and `180/(s+180)` tachometer filters; it has no extra filter before the signed square root. This nominal transfer function matches the stored template parameters, but the actual QUARC library has not been executed. Original gains produced 5.220–5.222 s settling and 2.55–2.82% overshoot. A reported 6.6 s result requires a matched comparison of all other controller/filter/sampling settings before attributing the difference to the rate filter.
 
-The 60 s course-reference test gives RMS tracking error 0.09795 rad yaw and 0.05880 rad pitch with ideal measurements. The zero-state test stays at rest; signals remain finite; reducing the integration step preserves the response. The offline R2021a export also runs in R2024b. Actual R2021a execution, QUARC compilation and physical testing remain unverified.
+The selected device candidate keeps that filter and motor controller but sets `Kq=2.25 s^-2`, `Dq=2.25 s^-1` via `hardware_cascade_parameters`. All signed offline tests settle in **3.280–3.292 s** with less than 0.012% overshoot, without saturation; the simultaneous step peaks at 17.32 V. Halving the integration step gives 3.278–3.289 s and less than 0.000174 rad angle discrepancy. The same retuned gains with direct rates give about 3.19 s settling and 2.46% overshoot. Raising the filter cut-off to 30 rad/s instead gives 3.414 s with the original gains but may increase rate noise; the gain adjustment is the chosen candidate for professor review.
+
+With velocity feedforward, the retuned filtered candidate gives course-sensor true-angle RMS errors of **0.01004/0.00626 rad** and 9.98 V peak voltage. These are simulated results, not physical measurements. The selected offline candidate passes the working timing gate. Physical course-tracking screenshots are now available, with user-confirmed hand disturbances; runtime build/release/parameter logs and quantitative experimental validation remain unavailable. `validate_filter_remedies` preserves the controlled alternative comparisons, and `validate_hardware_cascade` validates the selected candidate.
 
 The hardware model includes angle, velocity, acceleration, rotor-speed, voltage and error Scopes. Its acceleration traces are sampled-difference estimates, unlike the exact derivative signals available in the simulated course plant. The template's main/tail speed output labels were reversed relative to its controller routing; the adapted labels identify motor 0/main and motor 1/tail. Physical assignment, polarity, encoder calibration and operating limits still need checking on the rig.
 
-See [Hardware implementation and offline evidence](hardware.md) for the exact file to open, channel table, gains, Scope connections and commands. `validate_hardware_cascade` saves the repeatable results under `results/hardware_cascade/`; its `TimingMet` column explicitly records the failed timing criterion.
+See [Hardware implementation and offline evidence](hardware.md) for the exact file to open, channel table, gains, Scope connections and commands. `validate_hardware_cascade` saves the repeatable results under `results/hardware_cascade/`; its `TimingMet` column records the selected candidate's offline timing result.
 
 ## Part I — Question 2(a–b): DC motor with quadratic drag
 
@@ -1360,3 +1379,14 @@ build_cstr;
 validate_cstr;
 export_cstr_figures;
 ```
+
+
+## Physical course tracking under manual disturbances
+
+Two original Scope screenshots from the physical laboratory are preserved in [real_lab_images](../real_lab_images/README.md) and included in the academic report. The operator confirmed use of the derived controller and deliberate hand-applied perturbations. The traces approach the original course references between and after the visible disturbances. This supports a qualitative disturbance-recovery discussion, not a numerical stability margin, settling time, RMS score or voltage-saturation claim.
+
+![Physical Scope record 1](figures/hardware_manual_disturbance_run_1.png)
+
+![Physical Scope record 2](figures/hardware_manual_disturbance_run_2.png)
+
+The upper/lower profiles correspond to yaw/pitch. Yellow matches the course reference; blue is interpreted as measured angle. Disturbance torques and application times were not logged, and some pitch excursions are outside the displayed vertical range. No separate speed-loop, single-axis or integral-enabled records were supplied; runtime parameter/build logs and numeric angle/voltage recordings remain unavailable.

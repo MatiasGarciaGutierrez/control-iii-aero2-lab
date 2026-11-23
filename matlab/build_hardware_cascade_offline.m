@@ -34,7 +34,8 @@ add_block('simulink/Sinks/Terminator',[interface '/LED terminator'],'Position',[
 wire(interface,'Unused LED/1','LED terminator/1');
 for k=1:2
     names={'Yaw','Pitch'}; n=names{k};
-    % Matches the template's QUARC filter: wn=10 rad/s, zeta=0.8, x0=0.
+    % Nominal transfer-function equivalent of the template: wn=10 rad/s,
+    % zeta=0.8, x0=0. This does not execute the actual QUARC library block.
     add_block('simulink/Continuous/Transfer Fcn',[interface '/' n ' filtered'], ...
         'Numerator','100','Denominator','[1 16 100]', ...
         'Position',[420 30+190*k 520 60+190*k]);

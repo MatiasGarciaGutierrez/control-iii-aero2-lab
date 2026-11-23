@@ -1,6 +1,8 @@
 # Control III AERO 2 laboratory
 
-Read the compiled [PDF report](report/lab2_report.pdf), or edit its [LaTeX source](report/main.tex). [Build instructions](report/README.md) cover PDF generation and evidence sources. The current draft reports Part I, Questions 1–3; Part II will follow.
+Read the compiled [PDF report](report/lab2_report.pdf), or edit its [LaTeX source](report/main.tex). [Build instructions](report/README.md) cover PDF generation and evidence sources. Separate parts report Part I, Questions 1–3, and Part II, Questions 1–5, with optional integral action and outstanding experimental work.
+
+Part II position-control comparisons use the original 60 s course yaw/pitch references as their common baseline. Run `setup_project; validate_course_reference; export_course_reference_figures` to reproduce it across the ideal mechanics, full cascade, optional integral controller and HIL-free hardware surrogate. Custom steps and subsystem inputs are supplementary diagnostics.
 
 Parts I and II of the Automatic Control III laboratory. Develop and validate one question at a time, preserving the supplied course files.
 
@@ -61,6 +63,8 @@ Press Run. The motor examples command main +100 and tail -100 rad/s at 0.1 s. Qu
 
 **Questions 4–5 and the optional controller now use the course reference by default.** Press Run for the complete 60 s yaw/pitch trajectory. Double-click **Desired orientation** to see the two From Workspace sources: `U_v` (yaw) and `U_h` (pitch). The exact course time series, including the factor of two, are stored in each model workspace; no initialization script is needed before running a saved model. All Scopes display 60 s.
 
+The position models embed analytical reference velocities in **Desired rates**, with `Kff=1` enabling velocity feedforward. On the same course-sensor test, this reduces the full cascade's yaw/pitch RMS error from 0.09945/0.05969 rad to 0.00915/0.00587 rad; peak voltage is 10.59 V without saturation. Set a consistent `ReferenceRate` when changing a smooth reference. Step and recovery diagnostics use `Kff=0`. `validate_course_reference` makes the matched comparison; `validate_reference_velocity_exports` checks exported dynamics in the installed MATLAB release.
+
 The position experiment copies also default to the course trajectory. Validation scripts explicitly select the separate step, disturbance and recovery tests. Their measured step settling times remain 2.996 s for Question 4 and 3.204–3.210 s for Question 5. Course-trajectory plots show tracking performance, not step settling time.
 
 The optional model adds position integral action and outer anti-windup without replacing Question 5. Nominal settling is 3.042–3.050 s. The separate experiment compares rejection of constant external torques and recovery after temporary voltage-authority loss. See the optional section in the report for the gain derivation and tradeoffs.
@@ -73,7 +77,7 @@ The adapted full cascade is [simulink/aero2_hardware_cascade.slx](simulink/aero2
 
 To simulate without QUARC or a device, open [aero2_hardware_cascade_offline.slx](simulink/experiments/aero2_hardware_cascade_offline.slx). It uses the same controller, the course plant and equivalent hardware measurement filters. Run `validate_hardware_cascade` for repeatable checks. All saved models use the course position reference.
 
-**The hardware port has not been built or run with QUARC.** With the retained gains and hardware rate estimator, offline steps settle in about 5.2 s, exceeding the 3 s timing target. This limitation and the outstanding encoder/polarity checks are documented; these files do not establish hardware readiness.
+**Physical course-tracking tests are now documented** by two user-supplied Scope screenshots in `real_lab_images/`, with deliberate hand-applied disturbances. See [experimental evidence](docs/hardware.md#physical-laboratory-evidence) for the originals and limits of interpretation. The nominal lab-ready candidate uses `Kq=2.25 s^-2`, `Dq=2.25 s^-1` and the 10 rad/s, damping 0.8 rate estimator; it gives 3.280–3.292 s offline settling. Runtime build/parameter logs and numerical experimental recordings were not supplied.
 
 ## Separate experiment copies
 

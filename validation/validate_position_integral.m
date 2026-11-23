@@ -31,6 +31,7 @@ baseline='aero2_cascade_control_experiment';
 load_system(fullfile(project.experiments,[baseline '.slx']));
 input=Simulink.SimulationInput(baseline);
 input=input.setVariable('Reference',test.reference,'Workspace',baseline);
+input=input.setVariable('Kff',0,'Workspace',baseline);
 input=input.setBlockParameter([baseline '/Desired orientation'],'Interpolate','off');
 input=input.setModelParameter('StopTime',num2str(p.stopTime));
 output=sim(input); reference=matrix(output.cascade_data,24);
@@ -153,7 +154,7 @@ function r=runTest(model,t,p)
 input=Simulink.SimulationInput(model);
 input=input.setBlockParameter([model '/Desired orientation'],'Interpolate','off');
 variables={'Reference',t.reference;'Disturbance',t.torque;'VoltageLimits',t.authority; ...
-    'meas_on',t.noise;'OuterAW',t.outerAW};
+    'meas_on',t.noise;'OuterAW',t.outerAW;'Kff',0};
 if t.integral
     gains=[p.referenceGain p.positionGain p.rateGain p.integralGain];
 else

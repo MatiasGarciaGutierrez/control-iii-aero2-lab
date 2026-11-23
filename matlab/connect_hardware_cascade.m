@@ -12,6 +12,8 @@ wire(model,'Position error/1','Position gain/1');
 wire(model,'Position gain/1','Desired acceleration/1');
 wire(model,'Measured rates/1','Rate feedback gain/1');
 wire(model,'Rate feedback gain/1','Desired acceleration/2');
+wire(model,'Desired rates/1','Reference velocity feedforward/1');
+wire(model,'Reference velocity feedforward/1','Desired acceleration/3');
 wire(model,'Measured angles/1','Mechanical inverse/1');
 wire(model,'Measured rates/1','Mechanical inverse/2');
 wire(model,'Desired acceleration/1','Mechanical inverse/3');

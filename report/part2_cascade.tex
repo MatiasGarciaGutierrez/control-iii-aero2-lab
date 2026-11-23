@@ -1,0 +1,30 @@
+\section*{5. Complete cascade and simulation results}
+The outer position controller and nonlinear inverse generate desired rotor speeds; two IP loops with anti-windup generate the limited motor voltages. With $x=[q^\mathsf{T},\dot q^\mathsf{T},\omega^\mathsf{T}]^\mathsf{T}$, the plant is
+\begin{equation}
+\boxed{\dot x=\begin{bmatrix}
+\dot q\\M_q^{-1}[\Gamma s(\omega)-c_q-g_q]\\-a_m\omega
+\end{bmatrix}
++\begin{bmatrix}0_{2\times2}\\0_{2\times2}\\b_mI_2\end{bmatrix}v},
+\qquad y=\begin{bmatrix}I_2&0_{2\times4}\end{bmatrix}x.
+\end{equation}
+The motor controllers add two integral states. All gains are retained from the preceding designs. Finite rotor tracking introduces the acceleration discrepancy
+\begin{equation}
+\ddot q-a=M_q^{-1}\Gamma\bigl[s(\omega)-s(\omega_d)\bigr].
+\end{equation}
+On the same 60 s course trajectory with the supplied sensor effects, enabling reference-velocity feedforward (FF) while retaining all gains gives:
+\input{course_baseline_results}
+Errors use true plant angles over the full 60 s. Only the reference-velocity channel changes in the paired IP-cascade comparison. Acceleration feedforward is absent, so reference acceleration still forces the error. Supplementary steps disable FF and retain 3.204--3.210 s settling without overshoot; the course smoothing constant is not a settling-time measurement.
+\begin{center}
+\includegraphics[width=\linewidth]{report_part2_course_baseline.png}
+\reportcaption{Course-reference tracking with FF (left), and matched tracking-error and motor-voltage comparisons without/with FF (middle/right).}
+\end{center}
+
+\subsection*{Optional: position integral action}
+Add an acceleration-valued integral contribution $J$. Matching each axis denominator to $(s+\lambda)^3$ yields
+\begin{equation}
+\dot J=K_i^qe,\qquad a=K_p^q(bq_d-q)+K_d^q(\dot q_d-\dot q)+J,
+\quad K_p^q=3\lambda^2I_2,\quad K_d^q=3\lambda I_2,\quad K_i^q=\lambda^3I_2,\quad b=\tfrac13.
+\end{equation}
+With $\lambda=1.9446406$ s$^{-1}$ and the velocity channel disabled for sharp steps, the ideal reference transfer function is $\lambda^2/(s+\lambda)^2$; simulated settling is 3.042--3.050 s. Both outer integrators pause during voltage saturation. The reference weight is retained, so the integral design is not equivalent to the unweighted PD tracker. Supplementary constant-torque tests confirm removal of steady offsets; integral action is used for disturbance rejection rather than assumed to improve moving-reference tracking.
+
+The following section distinguishes offline preparation from the physical measurements still required by the assignment~[1].

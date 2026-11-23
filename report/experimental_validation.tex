@@ -1,0 +1,37 @@
+\section*{Experimental validation}
+\textbf{Evidence.} Two laboratory Scope screenshots document physical course-reference tracking with the derived PD/IP cascade. The operator deliberately introduced disturbances by hand. Numerical recordings of angles, rotor speeds, voltages and disturbance torques were not supplied; the experimental assessment is therefore qualitative. Original screenshots are shown in Appendix~C.
+
+\subsection*{Filter-aware simulation and selected remedy}
+The template's second-order filter uses $\omega_f=10$ rad/s, $\zeta_f=0.8$, zero initial state. The surrogate applies
+\begin{equation}
+q_f=H_f(s)q,\qquad \widehat{\dot q}=sH_f(s)q,\qquad
+H_f(s)=\frac{\omega_f^2}{s^2+2\zeta_f\omega_fs+\omega_f^2}
+=\frac{100}{s^2+16s+100}.
+\end{equation}
+Raw angles feed the controller; estimated rates enter damping and nonlinear cancellation. Tachometers use $180/(s+180)$; no filter precedes the signed square root. These are offline surrogate results. Original gains give 5.220--5.222 s settling; the selected hardware configuration uses the retuned gains below.
+\input{filter_remedy_results}
+
+\subsection*{Validation section by section}
+The assignment~[1] calls for validating the speed loops, individual axes and complete cascade in sequence. Only the complete course-tracking tests are documented here. The isolated speed-loop simulation predicts about 0.43 s settling, no overshoot and 6 V at 100 rad/s; these are not measured device results.
+\begin{center}
+\begin{tabular}{ll}
+\hline
+Device test & Available experimental evidence\\\hline
+Speed loops & Separate records not supplied\\
+Individual axes & Separate records not supplied\\
+Course references with manual disturbances & Two Scope screenshots\\\hline
+\end{tabular}
+\end{center}
+
+\subsection*{Simulation versus experiment}
+The screenshots show tracking between perturbations and substantial transient excursions following manual intervention, followed by recovery toward the references. The nominal simulations do not include these hand-applied torques, so whole-run errors are not directly comparable. Other possible differences include rate filtering, friction and cable torque omitted by $B_q=0$, parameter uncertainty, thrust near zero speed and sensor noise; their individual contributions cannot be separated from these images.
+
+\subsection*{Optional integral action on the device}
+A paired device test with and without integral action was not documented. Its effect on steady offsets, voltage demand and disturbance recovery cannot be assessed from the supplied screenshots.
+
+\paragraph{Conclusion.}
+Following the feedback-linearization method~[2], the prescribed ideal output dynamics are obtained where the inverse exists; the CSTR internal equilibrium is stable. Reference-velocity feedforward reduces simulated course-tracking RMS by about 90\%. Physical Scope records show tracking and recovery under manual disturbances; quantitative experimental validation requires logged signals.
+
+\paragraph{References.}
+{\small [1] \textit{Computer Room Exercises: Linearization}, Automatic Control III, laboratory assignment, UPC.\par
+[2] R. Costa-Castell\'o, \textit{Linearization}, Automatic Control III lecture slides, UPC.}

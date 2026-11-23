@@ -1,10 +1,12 @@
 # Laboratory report
 
-Open this folder in Codex's LaTeX editor, or edit `main.tex`. The draft contains concise answers to Part I, Questions 1(a–d), 2(a–d) and 3(a–d). Part II has a marked continuation point; its written report will be added later.
+Open this folder in Codex's LaTeX editor, or edit `main.tex`. Separate Part I and Part II headings distinguish the theoretical exercises from the Quanser AERO 2 application. The report contains concise answers to Part I, Questions 1–3, and Part II, Questions 1–5, with optional position integral action and an explicit account of outstanding experimental work.
 
 The compiled [PDF report](lab2_report.pdf) is committed alongside the LaTeX sources for viewing directly on GitHub. Regenerate it whenever the report sources or figures change.
 
-The report is split by question, with short motor/CSTR results paragraphs. Its academic text contains equations, methods and control-performance findings; software test counts and export compatibility details belong in repository documentation. Selected evidence remains in `../docs/figures/`; matching copies in `images/` make this LaTeX project self-contained for the live preview, which cannot read outside its project folder. Raw MATLAB recordings remain in ignored `../results/`. Figures are plots of logged data or explanatory schematics, not screenshots.
+Models, output derivatives, linearizing laws, coordinate inverses, zero dynamics and gain matching are derived symbolically. Numerical plant parameters and selected gains are introduced only for implementation and simulation. CSTR rates are defined in seconds before deriving the controller; the numerical conversion from the guide's minute-based parameters is stated with the simulation settings.
+
+The report is split by question, with short results paragraphs. The title lists Matías García and Snoeijink Lars. Its academic text contains equations, methods and control-performance findings; software test counts and export compatibility details belong in repository documentation. Appendices A and B contain actual Simulink diagram exports for Parts I and II. Equations and figures use part-specific numbering. Selected evidence remains in `../docs/figures/`; matching copies in `images/` make this LaTeX project self-contained for the live preview, which cannot read outside its project folder. Raw MATLAB recordings remain in ignored `../results/`. Diagrams are model exports and plots are logged signals, not UI screenshots.
 
 ## Build
 
@@ -33,3 +35,25 @@ uv run --with matplotlib --with scipy python validation/export_latex_report_figu
 Run that command from the repository root. It reads logged samples from the two MAT recordings and updates both the selected evidence and the report's local image copies; it does not substitute analytical curves for simulation data.
 
 For the CSTR plot, run `setup_project; build_cstr; validate_cstr; export_cstr_figures` in MATLAB. The exporter synchronizes the selected evidence and the local LaTeX image.
+
+To refresh Appendix A, run `setup_project; export_report_block_diagrams`. It exports the saved pendulum, motor and CSTR closed loops and cancellation subsystems, synchronizing `docs/figures/` and `report/images/` without modifying the models or rerunning simulations.
+
+Appendix A also opens each nonlinear plant so the state integrators and balance equations requested in part (a) are visible. The experimental section separates offline filter preparation from the available physical results. It includes two original Scope screenshots with user-confirmed manual disturbances, a qualitative recovery discussion and an evidence-status table. Separate speed-loop, individual-axis and integral-comparison records were not supplied. Exact experimental RMS, settling, peak errors and voltage behavior are not inferred from images. A short conclusion and assignment/lecture references follow.
+
+Run `validate_filter_remedies` to reproduce the controlled original/30 rad/s/retuned-gain step comparison and write `results/filter_remedies/steps.csv`, which the Python report exporter uses for its remedy table. The hardware/offline candidate uses `hardware_cascade_parameters` (`Kq=Dq=2.25` numerically, with their respective units) and preserves the 10 rad/s, damping 0.8 filter. The original 5.22 s result remains evidence for the preceding gains; it is not the selected candidate's timing result. This is an offline candidate for professor validation, not tested hardware performance.
+
+Part II uses the original course yaw/pitch trajectory as the common baseline for every end-to-end position-controller comparison, including the optional integral controller and the HIL-free hardware surrogate. All use the same 60 s horizon, 2 ms reference samples, scaling and interpolation. The supplied measurement effects are included in the complete-cascade baseline; ideal-sensor runs provide a comparison. Separate motor-speed, acceleration, step-settling and disturbance tests are supplementary diagnostics. Step tests give about 3.2 s for the complete cascade. Original gains give about 5.2 s with hardware filters; the selected filter-aware hardware candidate gives about 3.3 s. These are separate step diagnostics, not physical experimental results.
+
+Run `setup_project; validate_course_reference; export_course_reference_figures` in MATLAB first. The baseline validation compares the generated reference against every sample from the original course initializer, checks the saved simple/experiment sources and 60 s duration, compares simple and diagnostic model outputs, and records ideal/noisy tracking and voltage metrics. Temporary logging is discarded without saving model changes; the actual QUARC model is never simulated.
+
+The saved position models now include analytical reference-velocity feedforward. `ReferenceRate` stores the derivative of the same smooth course trajectory, and `Kff=1` enables its contribution. Matched comparisons set `Kff` to 0 and 1 with all other settings fixed. Step, disturbance and recovery diagnostics set `Kff=0` explicitly because their discontinuous references are not differentiated. The optional integral design retains its position-reference weight and outer anti-windup. Regenerate the working/exported models with the position, cascade, integral and hardware/offline builders before rerunning validation after a controller change; R2021a exports are validated in R2024b, not in the laboratory release.
+
+To regenerate the compact motor diagnostic and course-baseline plots, the report's tracking-results table and six diagram copies, run from the repository root:
+
+```sh
+uv run --with matplotlib --with scipy python validation/export_part2_report_figures.py
+```
+
+The exporter reads `motor_ip_validation.mat`, `course_reference_validation.mat` and `course_reference_metrics.csv`. The baseline figure uses recorded true plant angles; noisy sensor errors are reported separately in the raw metrics. The older `report_part2_cascade_comparison.png` is retained as supplementary step evidence and is not the report's baseline plot.
+
+The original lab screenshots are preserved in `../real_lab_images/` with provenance notes. Selected documentation/report copies are byte-identical to those originals. The lab-ready model gives the nominal controller configuration; screenshots alone do not verify the exact loaded gains, build revision or MATLAB/QUARC release.

@@ -1,8 +1,8 @@
 # Full position cascade with the professor's hardware interface
 
-The adapted model controls **yaw and pitch position**, using our Question 5 controller. It keeps the professor's AERO 2 USB interface. The original four files under `real_hardware/` are unchanged.
+The adapted model controls **yaw and pitch position**, using our Question 5 cascade with filter-aware position gains. It keeps the professor's AERO 2 USB interface. The original four files under `real_hardware/` are unchanged.
 
-**Current status:** the controller has been tested with a separate offline surrogate. The hardware model has not been compiled with QUARC or run on the AERO 2. Retaining the template's measurement filters increases simulated step settling to about **5.2 s**, so this port does **not** yet satisfy the 3 s timing target.
+**Current status:** physical course-tracking tests are documented by two Scope screenshots supplied from the laboratory. The operator confirmed use of the derived controller and deliberate disturbances applied by hand. The nominal lab-ready candidate uses `Kq=2.25 s^-2`, `Dq=2.25 s^-1`, retaining the 10 rad/s, damping 0.8 filter. Its offline settling is 3.280–3.292 s. The images show qualitative tracking and recovery; they do not independently verify the loaded software/gains, numerical performance or voltage behavior.
 
 ## Which file to open
 
@@ -57,12 +57,12 @@ The template reads pitch/yaw encoder channels `[2 3]`, converts them with `[2*pi
 
 ## What changed in the controller
 
-The position law, inverse mechanics and gains are copied from our existing Question 5 model:
+The inverse and motor controller are copied from Question 5. Position gains are retuned for the retained rate estimator:
 
 ```math
-a=K_p^q(q_d-q)-K_d^q\dot q,
-\qquad K_p^q=3.781626936,
-\qquad K_d^q=3.889281135.
+a=K_p^q(q_d-q)+K_d^q(\dot q_d-\widehat{\dot q}),
+\qquad K_p^q=2.25\ \mathrm{s}^{-2},
+\qquad K_d^q=2.25\ \mathrm{s}^{-1}.
 ```
 
 The motor loops retain `Kp = 0.216370392`, `Ki = 1.841646063`, `Kaw = 20` and the ±24 V voltage limit. The integral state uses **Forward Euler at 0.002 s**. At that integration step, it implements the same update as the continuous integrator in our Euler simulation:
@@ -77,7 +77,7 @@ I_{k+1}=I_k+T_s\left[K_i(\omega_{d,k}-\omega_k)+K_{\mathrm{aw}}(v_k-v_{\mathrm{r
 
 ![IP controller in the hardware model](figures/hardware_ip_diagram.png)
 
-This is the baseline PD position cascade. There is no optional outer integrator, reference derivative or acceleration feedforward. The course `U_v`/`U_h` trajectory is the saved default, for 60 s.
+This is the PD position cascade with analytical course-reference velocity feedforward. There is no optional outer integrator or reference-acceleration feedforward. The course `U_v`/`U_h` trajectory and its sampled analytical derivative are embedded for 60 s. `Kff=1` enables the velocity contribution; sharp-step diagnostics explicitly use `Kff=0` rather than differentiating their discontinuities.
 
 The QUARC target configuration is copied from the professor's model, with its fixed integration step corrected from **0.1 s to 0.002 s**. The HIL board, channels, voltage units, encoder conversions and zero-voltage startup/termination settings are preserved. Quanser documents these analog outputs as motor voltages in the ±24 V range, so no extra DAC scale factor is introduced. See the [AERO 2 driver documentation](https://docs.quanser.com/quarc/documentation/quanser_aero2_usb.html).
 
@@ -107,17 +107,19 @@ The separate offline copy replaces **all** QUARC/HIL blocks with the supplied no
 
 | Step test | Settling time, 2% | Overshoot | Peak voltage |
 | --- | --- | --- | --- |
-| Yaw ±0.1 rad | 5.222 s | 2.76% | 12.72 V |
-| Pitch ±0.1 rad | 5.222 s | 2.66% | 13.45 V |
-| Simultaneous yaw ±0.2, pitch ±0.1 rad | 5.220–5.222 s | 2.55–2.82% | 22.45 V |
+| Yaw ±0.1 rad | 3.280 s | 0.0114% | 9.81 V |
+| Pitch ±0.1 rad | 3.290 s | 0.0070% | 10.38 V |
+| Simultaneous yaw ±0.2, pitch ±0.1 rad | 3.280–3.292 s | <0.010% | 17.32 V |
 
-All signed steps converge within the test window without voltage saturation. Signals remain finite and pitch remains inside the inherited ±60° modeling envelope. Zero reference and zero state remain at rest. Halving the integration step, while keeping the controller sampling at 2 ms, gives 5.212–5.215 s settling and a maximum angle difference of 0.000295 rad.
+All signed steps converge within the test window without voltage saturation. Signals remain finite and pitch remains inside the inherited ±60° modeling envelope. Zero reference and zero state remain at rest. Halving the integration step, while keeping the controller sampling at 2 ms, gives 3.278–3.289 s settling and a maximum angle difference of 0.000174 rad.
 
-**The 3 s ±20% timing gate fails for all eight measured axis responses.** In Question 5, body rates were available directly. Here, their estimator introduces extra states and delay into both damping feedback and nonlinear compensation. The controller gains have deliberately been retained so this difference is visible. Estimator-aware tuning is needed before claiming the timing requirement is met.
+**The selected candidate passes the working 3 s ±20% offline timing gate for all signed axis responses.** Original gains failed at 5.220–5.222 s: the estimator adds states and delay to damping feedback and nonlinear compensation. `validate_filter_remedies` compares the unchanged controller, a 30 rad/s filter and the selected 2.25/2.25 gain adjustment. Retuning preserves the template filter; raising its cut-off may increase measurement noise. This is an offline result, not professor approval or measured device performance.
 
 ![Offline course-reference tracking](figures/hardware_cascade_offline_course.png)
 
-For the 60 s course reference, ideal-measurement RMS tracking error is 0.09795 rad yaw and 0.05880 rad pitch, with peak voltage 7.49 V. With the course sensor model enabled, measured-error RMS is 0.09793 and 0.05877 rad, with peak voltage 7.63 V. These are surrogate simulation results, not measured hardware performance or a calibrated model of the real sensors.
+For the 60 s course reference, the retuned filtered candidate with velocity feedforward gives ideal-sensor yaw/pitch RMS errors of 0.00999/0.00615 rad, and 0.01004/0.00626 rad with course sensor effects. Peak voltage is 9.98 V with sensor effects, without saturation. These are surrogate simulation results, not measured hardware performance.
+
+The template stores `input_width=10`, `input_zeta=0.8`, `input_init=0`. Its [QUARC block documentation](https://docs.quanser.com/quanser-sdk/documentation/secondorder_lowpass_filter_block.html) specifies rad/s. Our ordinary Simulink equivalent is `H(s)=100/(s^2+16s+100)`, with rate output `s*H(s)`; raw angles and filtered rates enter the controller. Tachometers use `180/(s+180)`, and no extra torque-command filter precedes the signed square root. Thus the nominal filter matches the stored template parameters, but actual QUARC execution has not been checked. A different reported 6.6 s settling result cannot be attributed to the filter parameters alone without matching controller gains, other filtering, sampling and test conditions.
 
 Reproduce the evidence with:
 
@@ -127,7 +129,7 @@ validate_hardware_cascade;
 export_hardware_cascade_figures;
 ```
 
-Data and CSV tables go to `results/hardware_cascade/`. `TimingMet` records the failed timing gate separately from integrity/convergence checks. `python3 validation/audit_hardware_model.py` checks source hashes, preserved HIL settings, channel routing and the absence of hardware blocks from both offline files.
+Data and CSV tables go to `results/hardware_cascade/`. `TimingMet` records the selected candidate's offline timing result separately from integrity/convergence checks; the original failure remains in `results/filter_remedies/steps.csv`. `python3 validation/audit_hardware_model.py` checks source hashes, preserved HIL settings, channel routing and the absence of hardware blocks from both offline files.
 
 ## What remains for the laboratory
 
@@ -135,7 +137,7 @@ The professor needs to review the port before the hardware experiment. Confirm t
 
 The inherited ±60° pitch assertion is a mathematical operating restriction, not an approved hardware travel limit or a physical emergency-stop system. The template retains zero voltage and amplifier-disable settings on termination, plus its configured watchdog output values; this adaptation does not add or verify a running watchdog timer.
 
-QUARC is absent on this Mac. The `.slx` files and R2021a exports are saved, their wiring is audited, and the offline export runs in R2024b. **QUARC code generation, real-time timing, actual R2021a execution and physical operation remain unverified.** Follow the professor's section-by-section commissioning procedure on the lab computer.
+QUARC is absent on this Mac. The `.slx` files and R2021a exports are saved, their wiring is audited, and the offline export runs in R2024b. **Build logs, actual runtime release, real-time timing and exact loaded parameters are not archived. Physical operation is documented by the supplied Scope screenshots.** Follow the professor's section-by-section commissioning procedure on the lab computer.
 
 To rebuild the two separate models without running hardware:
 
@@ -143,3 +145,18 @@ To rebuild the two separate models without running hardware:
 build_hardware_cascade;
 build_hardware_cascade_offline;
 ```
+
+
+## Physical laboratory evidence
+
+The user supplied these original physical Scope records and confirmed that the disturbances were deliberately introduced using their hands. They reported using the derived controller. The nominal lab-ready model is the PD/IP cascade with 2.25/2.25 position gains; exact runtime gains, binary revision and integral setting are not independently logged in the images.
+
+![Physical course tracking with manual disturbances, record 1](figures/hardware_manual_disturbance_run_1.png)
+
+![Physical course tracking with manual disturbances, record 2](figures/hardware_manual_disturbance_run_2.png)
+
+The yellow profiles match the supplied 60 s course signals, with yaw above and pitch below; blue traces are interpreted as measured angles. The first record shows pronounced excursions around 20–25 s and 50–55 s, while the second shows a pronounced response around 45–50 s. These are approximate response intervals, not logged force-application times. The traces subsequently approach the reference again. Some positive pitch excursions exceed the visible plot range, preventing reliable peak extraction.
+
+The manual disturbance magnitude/duration is unknown. These intervals assess qualitative disturbance recovery and cannot be used as undisturbed tracking errors or compared directly with simulated no-disturbance RMS. Exact RMS, 2% settling times, maximum excursions and voltage saturation are not inferred. Separate motor-speed, individual-axis and integral-enabled records were not supplied.
+
+Original files are preserved unchanged in [real_lab_images](../real_lab_images/README.md). Selected copies in `docs/figures/` and `report/images/` are byte-identical; no image processing was performed. Raw numerical experiment recordings remain unavailable.

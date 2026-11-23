@@ -25,4 +25,6 @@ for k=1:3
     names={'question_4_diagram.png','question_5_diagram.png','position_integral_diagram.png'};
     print(['-s' model],'-dpng','-r150',fullfile(folder,names{k}));
 end
+print('-saero2_position_integral/Position integral control','-dpng','-r150', ...
+    fullfile(folder,'position_integral_controller.png'));
 end

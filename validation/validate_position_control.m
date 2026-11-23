@@ -57,6 +57,7 @@ end
 
 function r=experiment(model,command,state,step)
 input=Simulink.SimulationInput(model);
+input=input.setVariable('Kff',0,'Workspace',model); % Sharp-step diagnostic: no reference derivative.
 p=position_control_parameters;
 reference=[0 0 0;p.stepTime-p.step 0 0;p.stepTime command';p.stopTime command'];
 input=input.setVariable('Reference',reference,'Workspace',model);
