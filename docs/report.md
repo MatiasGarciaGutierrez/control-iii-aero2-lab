@@ -828,6 +828,8 @@ The [position-control experiment](../simulink/experiments/aero2_position_control
 
 The dotted reference is compared with the simulated angle. Single-axis tests also show that the uncommanded axis stays at zero. The vertical line is **3 s after the command**, at absolute simulation time 3.2 s; the settling-time measurement starts at the 0.2 s step.
 
+The academic report includes a compact [yaw/pitch step-response plot](figures/report_part2_position_steps.png) directly under Question 4, using the same simultaneous-command recording. Its time axis starts at the step, with shaded 2% settling bands and a 3 s target line. Regenerate it with `validation/export_part2_report_figures.py` after `validate_position_control`.
+
 | Metric | Result across the signed step tests |
 |---|---:|
 | 2% settling time | **2.996 s** |

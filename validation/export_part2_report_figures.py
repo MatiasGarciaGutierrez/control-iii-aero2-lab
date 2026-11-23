@@ -59,6 +59,24 @@ def main():
         axis.legend(frameon=False, fontsize=8)
     save(fig, 'report_part2_motor_comparison.png')
 
+    position = loadmat(ROOT / 'results/position_control_validation.mat', simplify_cells=True)
+    run = position['runs'][4]  # Recorded simultaneous +0.2/+0.1 rad steps.
+    step_time = float(position['p']['stepTime'])
+    selected = run['time'] >= step_time
+    elapsed = run['time'][selected] - step_time
+    fig, axes = panels()
+    for index, axis in enumerate(axes):
+        target = float(run['data'][-1, index])
+        axis.axhspan(0.98*target, 1.02*target, color='0.8', alpha=0.5)
+        axis.axvline(3, color='0.4', linestyle=':', linewidth=1)
+        axis.plot(elapsed, run['data'][selected, index+2], label='Simulink', linewidth=1.6)
+        axis.axhline(target, color='black', linestyle='--', linewidth=0.9, label='Reference')
+        axis.set_xlim(0, 5)
+        axis.set_xlabel('Time after step [s]')
+        axis.set_ylabel(['Yaw [rad]', 'Pitch [rad]'][index])
+        axis.legend(frameon=False, fontsize=7)
+    save(fig, 'report_part2_position_steps.png')
+
     baseline = loadmat(ROOT / 'results/course_reference_validation.mat', simplify_cells=True)
     # The empty ideal-mechanics noise cell keeps scipy's noisyRuns entries as
     # MATLAB structs rather than dictionaries; normalize at the file boundary.
