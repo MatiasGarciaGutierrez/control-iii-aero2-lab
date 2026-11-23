@@ -16,7 +16,7 @@
 \item the optional integral action keeps the settling time near 3~s.
 \end{itemize}
 
-\textbf{Part II, device.} The controller ran on the AERO~2 with the gains of the provided setup script, at the first attempt and without tuning. The only change was taking the derivative from the error, because the template's speed estimate lagged and made the rotors oscillate. The device followed the course references closely and recovered from pushes by hand within a few seconds. Compared with the simulation, yaw lagged about 0.2--0.3~s, most likely because of friction and cable drag that the model leaves out. No numerical data were saved, so these results come from traced screenshots.
+\textbf{Part II, device.} The controller ran on the AERO~2 with the gains of the provided setup script, at the first attempt and without tuning. The only change was taking the derivative from the error, because the template's speed estimate lagged and made the rotors oscillate. The device followed the course references closely and recovered from pushes by hand within a few seconds. Compared with the simulation, yaw lagged about 0.2--0.3~s, most likely because of friction and cable drag that the model leaves out. Integral action was on in every run ($K_i=1$), and the offsets at rest stayed below 0.015~rad; no run without it was made. The device gains give slower position poles than the 3~s design, so that specification is shown in simulation only. No numerical data were saved, so these results come from traced screenshots.
 
 \paragraph{References.}
 {\small [1] \textit{Computer Room Exercises: Linearization}, Automatic Control III, laboratory assignment, UPC.\par
