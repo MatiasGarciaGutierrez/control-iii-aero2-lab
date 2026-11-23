@@ -42,9 +42,9 @@ For constant $T_d$, choose $v=\lambda(T_d-T)$. Then $\dot e=-\lambda e$ and $e(t
 \begin{equation}
 \boxed{\lambda=\frac{-\ln\varepsilon}{T_s}},\qquad
 \varepsilon=0.02,\ T_s=5\ \mathrm{s}
-\quad\Longrightarrow\quad\lambda=0.782405\ \mathrm{s}^{-1}.
+\quad\Longrightarrow\quad\lambda=0.7824\ \mathrm{s}^{-1}.
 \end{equation}
-For simulation, $\nu=\gamma=1/60$ s$^{-1}$, $k_0=7.2\times10^{10}/60$ s$^{-1}$, $E/R_g=8750$ K, $\beta=200$ K\,L/mol, $C_{Af}=1$ mol/L and $T_f=350$ K. At $T_d=330$ K, $\eta^*=0.819833$ mol/L and the internal time constant is $[\nu+\kappa(T_d)]^{-1}=49.19$ s. Initially $T=310$ K and $C_A=\nu C_{Af}/[\nu+\kappa(310)]=0.961796$ mol/L. The reference changes to 330 K at 1 s. Simulate 180 s using \texttt{ode45}, maximum step 0.02 s and relative/absolute tolerances $10^{-8}/10^{-10}$.
+For simulation, $\nu=\gamma=1/60$ s$^{-1}$, $k_0=7.2\times10^{10}/60$ s$^{-1}$, $E/R_g=8750$ K, $\beta=200$ K\,L/mol, $C_{Af}=1$ mol/L and $T_f=350$ K. At $T_d=330$ K, $\eta^*=0.8198$ mol/L and the internal time constant is $[\nu+\kappa(T_d)]^{-1}=49.19$ s. Initially $T=310$ K and $C_A=\nu C_{Af}/[\nu+\kappa(310)]=0.9618$ mol/L. The reference changes to 330 K at 1 s. Simulate 180 s using \texttt{ode45}, maximum step 0.02 s and relative/absolute tolerances $10^{-8}/10^{-10}$.
 \begin{center}
 \includegraphics[width=0.95\linewidth]{report_cstr_response.png}
 \reportcaption{Simulated temperature tracking, concentration and coolant command. Temperature and concentration use different time scales.}

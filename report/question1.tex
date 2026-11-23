@@ -26,7 +26,7 @@ Choose $v=-k_p\theta-k_d\dot\theta$. Matching $s^2+k_ds+k_p=(s+a)^2$ gives $k_p=
 \qquad a=\frac{\tau_\varepsilon}{T_s},\qquad
 \boxed{k_p=a^2,\quad k_d=2a.}
 \end{equation}
-For implementation, $\varepsilon=0.02$ gives $\tau_\varepsilon\approx5.83392$. A 1 s target requires $a\approx5.83392$ s$^{-1}$; choosing $a=6$ s$^{-1}$ gives poles at $-6$, $k_p=36$, $k_d=12$ and predicted $T_s=0.9723$ s.
+For implementation, $\varepsilon=0.02$ gives $\tau_\varepsilon\approx5.8339$. A 1 s target requires $a\approx5.8339$ s$^{-1}$; choosing $a=6$ s$^{-1}$ gives poles at $-6$, $k_p=36$, $k_d=12$ and predicted $T_s=0.9723$ s.
 
 \answer{(d) Closed-loop simulation}
 Substitute $m=0.2$ kg, $l=0.5$ m, $g=9.81$ m/s$^2$ and $k=0.05$ N\,m\,s/rad, giving $g/l=19.62$ s$^{-2}$, $k/(ml^2)=1$ s$^{-1}$ and $1/(ml^2)=20$. Initially $x(0)=[0.1,0]^\mathsf{T}$ (rad, rad/s). The nonlinear closed loop is simulated for 2 s using \texttt{ode45}, maximum step 0.005 s and relative/absolute tolerances $10^{-8}/10^{-10}$.

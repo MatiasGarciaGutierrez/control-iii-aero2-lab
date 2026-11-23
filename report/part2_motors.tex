@@ -9,7 +9,7 @@ For each motor, use $e=\omega_d-\omega$, $v_{\rm raw}=K_pe+I$, $\dot I=K_ie$. Ma
 \boxed{K_p=\frac{2\lambda-a_m}{b_m},\qquad
 K_i=\frac{\lambda^2}{b_m}.}
 \end{equation}
-For simulation, $a_m=5.78$ s$^{-1}$ and $b_m=96.532$ rad\,s$^{-2}$/V. With $\lambda\approx4/T_s$ and $T_s=0.3$ s, $K_p=0.2163704$, $K_i=1.8416461$. Using ideal measurements and a 0.002 s Euler step, signed 100 rad/s commands from rest at 0.1 s give 0.318 s settling, 3.70\% overshoot and 21.64 V peak voltage, below the 24 V limit. The PI zero causes overshoot despite repeated real poles. Block diagrams are in Appendix~B.
+For simulation, $a_m=5.78$ s$^{-1}$ and $b_m=96.532$ rad\,s$^{-2}$/V. With $\lambda\approx4/T_s$ and $T_s=0.3$ s, $K_p=0.2164$, $K_i=1.8416$. Using ideal measurements and a 0.002 s Euler step, signed 100 rad/s commands from rest at 0.1 s give 0.318 s settling, 3.70\% overshoot and 21.64 V peak voltage, below the 24 V limit. The PI zero causes overshoot despite repeated real poles. Block diagrams are in Appendix~B.
 
 \begin{center}
 \includegraphics[width=\linewidth]{report_part2_pi_response.png}

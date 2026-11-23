@@ -114,7 +114,7 @@ def main():
                 and int(row['ReferenceFeedforward']) == feedforward]
         yaw, pitch = sorted(pair, key=lambda row: int(row['Axis']))
         voltage = '---' if model == 'aero2_position_control' else f"{float(yaw['PeakVoltage']):.2f}"
-        rows.append(f"{label} & {float(yaw['TrackingRMS']):.5f}/{float(pitch['TrackingRMS']):.5f} & "
+        rows.append(f"{label} & {float(yaw['TrackingRMS']):.4f}/{float(pitch['TrackingRMS']):.4f} & "
                     f"{float(yaw['PeakError']):.4f}/{float(pitch['PeakError']):.4f} & {voltage}" + r'\\')
     table = [r'\begin{center}', r'\begin{tabular}{lccc}', r'\hline',
              r'Controller & RMS yaw/pitch (rad) & Peak error yaw/pitch (rad) & Peak $|v|$ (V)\\\hline',
