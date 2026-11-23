@@ -11,26 +11,51 @@
 \reportcaption{Simulink diagram export of the IP rotor-speed loops with anti-windup.}
 \end{center}
 \clearpage
-\subsection*{Questions 3 and 4: mechanical linearization and position control}
+\begin{landscape}
+\subsection*{Question 3: mechanical input-output linearization}
 \begin{center}
-\includegraphics[width=\linewidth,height=0.34\textheight,keepaspectratio]{professor_format_question3.png}
-\reportcaption{Mechanical input-output linearization in the supplied block layout: virtual accelerations, nonlinear inverse, separate signed square roots and ideal-speed mechanics.}
+\includegraphics[width=\linewidth]{professor_format_question3.png}
+\reportcaption{Virtual accelerations, nonlinear inverse, separate signed square roots and ideal-speed mechanics in the supplied block layout.}
+\includegraphics[width=0.7\linewidth,height=0.32\textheight,keepaspectratio]{professor_format_ideal_plant.png}
+\reportcaption{Opened ideal-speed plant: the four mechanical states and the actual body-acceleration output. Rotor speeds enter algebraically.}
 \end{center}
+\end{landscape}
+\begin{landscape}
+\subsection*{Question 4: ideal yaw/pitch position control}
 \begin{center}
-\includegraphics[width=\linewidth,height=0.34\textheight,keepaspectratio]{professor_format_question4.png}
-\reportcaption{Yaw/pitch position loops around the same ideal-speed mechanics. The two controllers use position and rate feedback with reference-velocity feedforward.}
+\includegraphics[width=\linewidth]{professor_format_question4.png}
+\reportcaption{Separate yaw/pitch position loops around the ideal-speed mechanics.}
+\includegraphics[width=0.75\linewidth,height=0.32\textheight,keepaspectratio]{professor_format_position_loop.png}
+\reportcaption{Opened yaw controller; the pitch loop is identical. Only the reference is differentiated. The integral branch is disabled ($K_i=0$).}
+\end{center}
+\end{landscape}
+\begin{landscape}
+\subsection*{Question 5: complete voltage-limited cascade}
+\begin{center}
+\includegraphics[width=\linewidth]{professor_format_cascade.png}
+\reportcaption{The two IP controllers feed visible $\pm24$ V limits. The applied voltages enter both the plant and anti-windup feedback; the 180 rad/s tachometer filters remain active.}
+\includegraphics[width=0.8\linewidth,height=0.30\textheight,keepaspectratio]{professor_format_ip.png}
+\reportcaption{Opened main-motor IP loop; the tail loop is identical. The pre-integrator back-calculation gain is $K_{\rm aw}/K_i$ because $K_i$ follows the integrator.}
+\end{center}
+\end{landscape}
+\subsection*{Optional position integral action}
+The complete cascade and motor filters remain those of Question 5. The two position loops use reference weighting and integral action; a common gate pauses both integrators whenever either applied motor voltage differs from its unconstrained command.
+\begin{center}
+\includegraphics[width=\linewidth,height=0.65\textheight,keepaspectratio]{professor_format_integral_loop.png}
+\reportcaption{Opened yaw position controller with reference weight $b=1/3$ and saturation-dependent integration. The pitch loop is identical.}
 \end{center}
 \clearpage
-\subsection*{Question 5 and optional position integral action}
+\subsection*{Laboratory model used on the AERO~2}
+The physical runs used \texttt{lin\_feedback\_Lars\_Matias.slx}, the professor's template with the sheets below.
 \begin{center}
-\includegraphics[width=\linewidth,height=0.25\textheight,keepaspectratio]{professor_format_cascade.png}
-\reportcaption{Complete cascade in the supplied block layout, with separate IP motor controllers and visible $\pm24$ V limits. Each saturated voltage feeds the plant and its anti-windup loop.}
+\includegraphics[width=0.7\linewidth,height=0.34\textheight,keepaspectratio]{lab_position_controller.png}
+\reportcaption{Simulink diagram export of the laboratory position controller (yaw; pitch is identical). The derivative acts on the error; the measured-rate input is not used.}
 \end{center}
 \begin{center}
-\includegraphics[width=0.9\linewidth,height=0.25\textheight,keepaspectratio]{professor_format_ip.png}
-\reportcaption{Main-motor IP controller; the tail loop is identical. The applied voltage enters through $u_{\rm sat}$. Since $K_i$ follows the integrator, the back-calculation gain before it is $K_{\rm aw}/K_i$.}
+\includegraphics[width=\linewidth,height=0.34\textheight,keepaspectratio]{lab_ip_controller.png}
+\reportcaption{Simulink diagram export of the laboratory IP rotor-speed controller (main rotor; tail is identical), with anti-windup through the $1/(s/180+1)$ filter.}
 \end{center}
 \begin{center}
-\includegraphics[width=\linewidth,height=0.25\textheight,keepaspectratio]{position_integral_controller.png}
-\reportcaption{Simulink diagram export of the optional position integral controller, including reference weighting and saturation-dependent integration.}
+\includegraphics[width=0.6\linewidth,height=0.34\textheight,keepaspectratio]{lab_tau_to_speed.png}
+\reportcaption{Simulink diagram export of the laboratory signed square root, $\omega=\operatorname{sign}(\tau)\sqrt{|\tau|}$ (main rotor; tail is identical).}
 \end{center}

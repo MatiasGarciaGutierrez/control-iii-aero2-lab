@@ -1,37 +1,40 @@
 \section*{Experimental validation}
-\textbf{Evidence.} Two laboratory Scope screenshots document physical course-reference tracking with the derived PD/IP cascade. The operator deliberately introduced disturbances by hand. Numerical recordings of angles, rotor speeds, voltages and disturbance torques were not supplied; the experimental assessment is therefore qualitative. Original screenshots are shown in Appendix~C.
+\subsection*{Laboratory controller}
+The laboratory runs used \texttt{lin\_feedback\_Lars\_Matias.slx} with the supplied \texttt{nlc\_setup\_solucion.m} gains, as recorded by the authors. These differ from the design gains used in the preceding simulations:
+\begin{center}
+\small
+\begin{tabular}{lll}
+\hline
+Loop & Laboratory gains & Design gains\\\hline
+Speed & $K_p=0.8$, $K_i=10$, $k_w=0.5$ & $K_p=0.2164$, $K_i=1.8416$, $K_{\rm aw}=20$\\
+Position & $K_p=2.5$, $K_d=2$, $K_i=1$ & $K_q=3.7816$, $D_q=3.8893$\\\hline
+\end{tabular}
+\end{center}
+The motor loops retain the 180 rad/s tachometer and anti-windup filters; their effective low-frequency back-calculation gain is $K_i k_w=5$ s$^{-1}$. The laboratory position law is
+\begin{equation}
+a=K_pe+K_d\frac{de}{dt}+K_i\int_0^t e(\tau)\,d\tau,\qquad e=q_d-q.
+\end{equation}
+It has neither reference weighting nor saturation-dependent outer integration. The derivative acts on measured error; the separate \texttt{dangle} input is unused in the position blocks. Filtered rate estimates remain in the nonlinear cancellation terms. Appendix~B shows the actual laboratory controller blocks.
 
-\subsection*{Filter-aware simulation and selected remedy}
-The template's second-order filter uses $\omega_f=10$ rad/s, $\zeta_f=0.8$, zero initial state. The surrogate applies
+The authors report oscillations with the original filtered-rate damping feedback and successful operation after differentiating error; no pre-change records were retained. For the 10 rad/s, damping 0.8 filter, the low-frequency group delay is approximately $2\zeta_f/\omega_f=0.16$ s. This frequency-dependent phase lag is not a fixed time delay and does not alone establish the cause of the observed oscillations. Direct differentiation also increases sensitivity to encoder noise.
+
+\subsection*{Physical records and comparison}
+Two Scope screenshots document course-reference tracking with disturbances deliberately applied by hand (Appendix~C). No numerical angle, voltage or disturbance recordings were saved. Figure~\ref{fig:labcomparison} retains the coauthor's illustrative comparison: the device curves were traced from the second screenshot, and the simulation curve was supplied with that reconstruction. Digitization uncertainty was not independently calibrated.
+\begin{center}
+\includegraphics[width=\linewidth]{lab_hw_vs_sim.png}
+\reportcaption{Illustrative simulation/device comparison supplied by the coauthor. Blue curves are traced from the original Scope screenshot, rather than logged samples. Shading identifies approximate perturbed intervals; force onset and magnitude were not recorded.}\label{fig:labcomparison}
+\end{center}
+The records show tracking between perturbations and recovery toward the moving reference. Yaw exhibits visible lag during some transitions. Friction and cable drag omitted by $B_q=0$, parameter uncertainty, rate estimation and sensor noise are possible contributors; their individual effects cannot be identified from these images. Precise delay, RMS error, steady offset and disturbance-rejection settling time are therefore not inferred.
+
+\subsection*{Validation coverage}
+Only complete course-tracking records are available; isolated motor-speed and individual-axis device tests were not archived. A nominal calculation with the laboratory speed gains and retained tachometer filter gives about 0.29 s settling without overshoot; this is a simulation result. Its poles include the filter state, rather than only the two nominal unfiltered motor-loop poles. The 3 s position specification is supported by the designed simulation studies, not established on the device. All reported device runs used $K_i=1$; without a paired run at $K_i=0$, their disturbance recovery cannot be attributed quantitatively to integral action.
+
+\subsection*{Separate offline filter study}
+The prepared hardware port was not used for the reported physical runs. Its surrogate applies the template's filter, with zero initial state,
 \begin{equation}
 q_f=H_f(s)q,\qquad \widehat{\dot q}=sH_f(s)q,\qquad
 H_f(s)=\frac{\omega_f^2}{s^2+2\zeta_f\omega_fs+\omega_f^2}
 =\frac{100}{s^2+16s+100}.
 \end{equation}
-Raw angles feed the controller; estimated rates enter damping and nonlinear cancellation. Tachometers use $180/(s+180)$; no filter precedes the signed square root. These are offline surrogate results. Original gains give 5.220--5.222 s settling; the selected hardware configuration uses the retuned gains below.
+Raw angles feed the controller; estimated rates enter damping and nonlinear cancellation. Tachometers use $180/(s+180)$; no filter precedes the signed square roots. This study uses the design gains of Section~4, not the laboratory gains, and illustrates the effect of rate filtering rather than reproducing the device results.
 \input{filter_remedy_results}
-
-\subsection*{Validation section by section}
-The assignment~[1] calls for validating the speed loops, individual axes and complete cascade in sequence. Only the complete course-tracking tests are documented here. The isolated speed-loop simulation predicts about 0.43 s settling, no overshoot and 6 V at 100 rad/s; these are not measured device results.
-\begin{center}
-\begin{tabular}{ll}
-\hline
-Device test & Available experimental evidence\\\hline
-Speed loops & Separate records not supplied\\
-Individual axes & Separate records not supplied\\
-Course references with manual disturbances & Two Scope screenshots\\\hline
-\end{tabular}
-\end{center}
-
-\subsection*{Simulation versus experiment}
-The screenshots show tracking between perturbations and substantial transient excursions following manual intervention, followed by recovery toward the references. The nominal simulations do not include these hand-applied torques, so whole-run errors are not directly comparable. Other possible differences include rate filtering, friction and cable torque omitted by $B_q=0$, parameter uncertainty, thrust near zero speed and sensor noise; their individual contributions cannot be separated from these images.
-
-\subsection*{Optional integral action on the device}
-A paired device test with and without integral action was not documented. Its effect on steady offsets, voltage demand and disturbance recovery cannot be assessed from the supplied screenshots.
-
-\paragraph{Conclusion.}
-Following the feedback-linearization method~[2], the prescribed ideal output dynamics are obtained where the inverse exists; the CSTR internal equilibrium is stable. Reference-velocity feedforward reduces simulated course-tracking RMS by about 90\%. Physical Scope records show tracking and recovery under manual disturbances; quantitative experimental validation requires logged signals.
-
-\paragraph{References.}
-{\small [1] \textit{Computer Room Exercises: Linearization}, Automatic Control III, laboratory assignment, UPC.\par
-[2] R. Costa-Castell\'o, \textit{Linearization}, Automatic Control III lecture slides, UPC.}

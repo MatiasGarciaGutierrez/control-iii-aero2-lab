@@ -1,6 +1,6 @@
 # Control III AERO 2 laboratory
 
-Read the compiled [PDF report](report/lab2_report.pdf), or edit its [LaTeX source](report/main.tex). [Build instructions](report/README.md) cover PDF generation and evidence sources. Separate parts report Part I, Questions 1–3, and Part II, Questions 1–5, with optional integral action and outstanding experimental work.
+Read the compiled [PDF report](report/lab2_report.pdf), or edit its [LaTeX source](report/main.tex). [Build instructions](report/README.md) cover PDF generation and evidence sources. Separate parts report Part I, Questions 1–3 and optional Question 4, and Part II, Questions 1–5, with optional integral action and outstanding experimental work.
 
 Part II position-control comparisons use the original 60 s course yaw/pitch references as their common baseline. Run `setup_project; validate_course_reference; export_course_reference_figures` to reproduce it across the ideal mechanics, full cascade, optional integral controller and HIL-free hardware surrogate. Custom steps and subsystem inputs are supplementary diagnostics.
 
@@ -39,6 +39,8 @@ Open [part1_pendulum_regulation.slx](simulink/part1_pendulum_regulation.slx) and
 For the professor's layout, open [aero2_cascade_professor_format.slx](simulink/aero2_cascade_professor_format.slx), press Run, and open **Position (rad)** and **Motor Speeds (rads/s)**. It embeds the original 60 s references and our nominal Lab 2 gains. Separate **IP_m** and **IP_t** blocks feed visible **+/-24 V** saturation blocks, with saturated-voltage feedback for anti-windup. An [R2021a export](simulink/aero2_cascade_professor_format_R2021a.slx) is included. See [adaptation details and validation](docs/report.md#professor-format-cascade-adaptation).
 
 The same layout is available for [Question 3 linearization](simulink/aero2_linearization_professor_format.slx) and [Question 4 position control](simulink/aero2_position_professor_format.slx). These retain the inverse, separate signed square roots, state feedback and scopes, using ideal rotor-speed mechanics without motor voltage loops. Question 3 applies an acceleration step; Question 4 adds the two position loops and the original smooth course references. Build and validate them with `setup_project; build_professor_mechanics; validate_professor_mechanics`. Matching `_R2021a.slx` exports are included.
+
+The report's optional integral comparison uses [aero2_integral_professor_format.slx](simulink/aero2_integral_professor_format.slx), with the same motor filters and plant as Question 5. Reproduce the matched course/step comparisons with `setup_project; build_professor_integral; validate_professor_report`, then run `export_professor_report_details` and the Python report exporter.
 
 | Activity | File to open in Simulink | Available views |
 |---|---|---|
@@ -81,7 +83,7 @@ The adapted full cascade is [simulink/aero2_hardware_cascade.slx](simulink/aero2
 
 To simulate without QUARC or a device, open [aero2_hardware_cascade_offline.slx](simulink/experiments/aero2_hardware_cascade_offline.slx). It uses the same controller, the course plant and equivalent hardware measurement filters. Run `validate_hardware_cascade` for repeatable checks. All saved models use the course position reference.
 
-**Physical course-tracking tests are now documented** by two user-supplied Scope screenshots in `real_lab_images/`, with deliberate hand-applied disturbances. See [experimental evidence](docs/hardware.md#physical-laboratory-evidence) for the originals and limits of interpretation. The nominal lab-ready candidate uses `Kq=2.25 s^-2`, `Dq=2.25 s^-1` and the 10 rad/s, damping 0.8 rate estimator; it gives 3.280–3.292 s offline settling. Runtime build/parameter logs and numerical experimental recordings were not supplied.
+**Physical course-tracking tests are now documented** by two user-supplied Scope screenshots in `real_lab_images/`, with deliberate hand-applied disturbances. See [experimental evidence](docs/hardware.md#physical-laboratory-evidence) for the originals and limits of interpretation. The device runs used the authors' lab model, [real_hardware/lin_feedback_Lars_Matias.slx](real_hardware/lin_feedback_Lars_Matias.slx), with the unchanged course gains of `real_hardware/nlc_setup_solucion.m`. The nominal lab-ready candidate (offline only, not used on the device) uses `Kq=2.25 s^-2`, `Dq=2.25 s^-1` and the 10 rad/s, damping 0.8 rate estimator; it gives 3.280–3.292 s offline settling. Runtime build/parameter logs and numerical experimental recordings were not supplied.
 
 ## Separate experiment copies
 
@@ -149,7 +151,7 @@ All working models have R2021a exports. Validation uses the available MATLAB R20
 
 ```text
 course/                  Original supplied PDFs, initialization script and model
-real_hardware/           Unchanged professor QUARC models and setup scripts
+real_hardware/           Unchanged professor QUARC models and setup scripts, plus our lab model
 matlab/                  Model builders
 matlab/parameters/       Course constants and controller gains
 matlab/mechanics/        Mechanical equations and nonlinear inverse

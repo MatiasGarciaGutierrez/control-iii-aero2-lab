@@ -1,0 +1,63 @@
+\section*{Question 4 (optional) --- Ball and beam}
+\answer{(a) State-space model}
+Let $x_1=r$, $x_2=\dot r$, $x_3=\theta$, $x_4=\dot\theta$, with input $u$ and output $y=r$. Solving the two equations of motion for $\ddot r$ and $\ddot\theta$ gives
+\begin{equation}
+ \boxed{\dot x=
+ \begin{bmatrix}x_2\\B\,(x_1x_4^2-g\sin x_3)\\x_4\\\dfrac{-2mx_1x_2x_4-mgx_1\cos x_3}{mx_1^2+J}\end{bmatrix}
+ +\begin{bmatrix}0\\0\\0\\\dfrac{1}{mx_1^2+J}\end{bmatrix}u},\qquad
+ B=\frac{m}{J_b/R^2+m},\qquad y=\begin{bmatrix}1&0&0&0\end{bmatrix}x.
+\end{equation}
+The torque acts only on the beam. The ball moves because the beam tilts ($-Bg\sin\theta$) and because of the centrifugal term $Br\dot\theta^2$. The Simulink plant uses four Integrators.
+
+\answer{(b) Exact input-output linearization and validity}
+Differentiating the output gives
+\begin{equation}
+ \dot y=\dot r,\qquad
+ \ddot y=B\,(r\dot\theta^2-g\sin\theta),\qquad
+ \dddot y=B\,(\dot r\dot\theta^2-g\dot\theta\cos\theta)+2Br\dot\theta\,\ddot\theta .
+\end{equation}
+With $\ddot\theta$ from (a), $u$ appears in $\dddot y$ with the factor $2Br\dot\theta/(mr^2+J)$. Where $r\dot\theta\ne0$, the relative degree is 3, one less than the order. Setting $\dddot y=v$ gives
+\begin{equation}
+ \boxed{u=2mr\dot r\dot\theta+mgr\cos\theta+\frac{mr^2+J}{2Br\dot\theta}\Bigl(v-B\,(\dot r\dot\theta^2-g\dot\theta\cos\theta)\Bigr).}
+\end{equation}
+The new states are $z=[r,\ \dot r,\ \ddot r]^\mathsf{T}$; one internal state remains, for example $\eta=\dot\theta$. The law divides by $r\dot\theta$, so it is valid only for $r\ne0$ and $\dot\theta\ne0$, with $|\theta|<\pi/2$. Near $r\approx0$ the torque has almost no effect on $\dddot y$, because a ball at the pivot feels no centrifugal force. Near this surface the required torque can become large; the exact law is undefined at the target $r=0$.
+
+\answer{(c) Behavior around $\dot\theta\approx0$}
+At $\dot\theta=0$, the input coefficient in $\dddot y$ vanishes. On this surface,
+$y^{(4)}=2Br\ddot\theta^2-Bg\cos\theta\,\ddot\theta$;
+therefore one more differentiation does not extend the regular relative-degree-three law through the singular surface. This occurs at rest and whenever the beam reverses.
+
+\answer{(d) Zero dynamics for $y=r=0$}
+Maintaining $r\equiv0$ requires $\dot r=\ddot r=0$. The ball equation then implies $\theta=0$ on $|\theta|<\pi/2$; invariance additionally requires $\dot\theta=0$ and $u=0$. Thus the zero-output invariant set is the origin. Since the decoupling coefficient vanishes there, the regular relative-degree-three zero-dynamics construction does not apply at that equilibrium; this set alone does not establish minimum-phase stability of the exact linearizing law.
+
+\clearpage
+\answer{(e) Approximate linearization and implementation}
+Neglect the small centrifugal term $Br\dot\theta^2$ in $\ddot r$. Then
+\begin{equation}
+ \ddot y\approx-Bg\sin\theta,\qquad
+ \dddot y\approx-Bg\dot\theta\cos\theta,\qquad
+ y^{(4)}\approx Bg\dot\theta^2\sin\theta-Bg\cos\theta\,\ddot\theta .
+\end{equation}
+Now $u$ appears in $y^{(4)}$ with the factor $-Bg\cos\theta/(mr^2+J)$, which is never zero for $|\theta|<\pi/2$. The reduced model has relative degree 4 on $|\theta|<\pi/2$, so there are no internal dynamics. The new states are
+\begin{equation}
+ z=\begin{bmatrix}r&\dot r&-Bg\sin\theta&-Bg\dot\theta\cos\theta\end{bmatrix}^\mathsf{T}.
+\end{equation}
+Setting $y^{(4)}=v$ and using the beam equation gives
+\begin{equation}
+ \boxed{u=\underbrace{(mr^2+J)\dot\theta^2\tan\theta+2mr\dot r\dot\theta+mgr\cos\theta}_{\alpha(x)}\;\underbrace{-\;\frac{mr^2+J}{Bg\cos\theta}}_{\beta(x)}\,v.}
+\end{equation}
+This law is valid for $|\theta|<\pi/2$ and has no singularity at $r=0$ or $\dot\theta=0$. In Simulink, one block computes $z$ from the measured state and another computes $u=\alpha(x)+\beta(x)v$; the plant of (a) is unchanged. The real ball still feels the neglected term, so the closed loop is only approximately linear.
+
+\answer{(f) State feedback and simulation}
+With $v=-\mathbf{k}z$ and $\mathbf{k}=[16,\ 32,\ 24,\ 8]$, the linearized loop has
+\begin{equation}
+ s^4+8s^3+24s^2+32s+16=(s+2)^4 .
+\end{equation}
+All four poles are at $-2$. From the stated initial condition, the normalized error is $e^{-2t}\bigl[1+2t+(2t)^2/2+(2t)^3/6\bigr]$. It enters the 2\% band at $2T_s\approx9.084$, so the predicted settling time is $\boxed{T_s\approx4.542\ \mathrm{s}}$, without overshoot.
+
+For simulation, $m=0.11$ kg, $R=0.015$ m, $J_b=9.9\times10^{-6}$ kg\,m$^2$, $J=0.02$ kg\,m$^2$ and $g=9.81$ m/s$^2$, so $B=5/7$. The ball starts at rest at $r(0)=0.2$ m on a level beam; the target is $r=0$. Simulate 10 s using \texttt{ode45}, maximum step 0.005 s and relative/absolute tolerances $10^{-8}/10^{-10}$.
+\begin{center}
+\includegraphics[width=\linewidth]{report_ballbeam_response.png}
+\reportcaption{Simulated ball position with the designed linear response (left) and applied torque (right). Horizontal dotted lines mark the $\pm0.004$ m settling band.}
+\end{center}
+The sampled 2\% settling time is \textbf{4.545 s}, without overshoot. The ball stays within $5.8\times10^{-5}$ m of the linear design; this small difference is the neglected term. The beam tilts at most 0.015 rad, less than one degree. The torque starts at 0.2270 N\,m, mostly to carry the ball's weight ($mgr(0)=0.216$ N\,m), and falls to zero as the ball reaches the pivot.
