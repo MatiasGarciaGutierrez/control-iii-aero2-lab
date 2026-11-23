@@ -11,9 +11,9 @@ The motor controllers add two integral states. All gains are retained from the p
 \begin{equation}
 \ddot q-a=M_q^{-1}\Gamma\bigl[s(\omega)-s(\omega_d)\bigr].
 \end{equation}
-On the same 60 s course trajectory with the supplied sensor effects, enabling reference-velocity feedforward (FF) while retaining all gains gives:
+The complete cascade is evaluated using the yaw and pitch reference trajectories supplied with the laboratory model. The table compares tracking with and without reference-velocity feedforward (FF) over 60 s, with the supplied sensor effects and identical feedback gains.
 \input{course_baseline_results}
-Errors use true plant angles over the full 60 s. Only the reference-velocity channel changes in the paired IP-cascade comparison. Acceleration feedforward is absent, so reference acceleration still forces the error. Supplementary steps disable FF and retain 3.204--3.210 s settling without overshoot; the course smoothing constant is not a settling-time measurement.
+Errors use true plant angles. Acceleration feedforward is absent, so reference acceleration still forces the error. Separate step tests assess the settling-time requirement: with FF disabled, settling is 3.204--3.210 s without overshoot.
 \begin{center}
 \includegraphics[width=\linewidth]{report_part2_course_baseline.png}
 \reportcaption{Course-reference tracking with FF (left), and matched tracking-error and motor-voltage comparisons without/with FF (middle/right).}
