@@ -6,6 +6,8 @@ The academic report derives models, nonlinear cancellation, coordinate transform
 
 The academic report displays numerical values with at most four decimal places; calculations, model parameters and raw recordings retain their original precision. Its course-reference table exporter uses the same display limit.
 
+Appendix B now displays the professor-format layouts for Questions 3–5 and the opened IP motor controller, including its saturated-voltage feedback. The question-specific captions distinguish ideal-speed mechanics from the complete voltage-limited cascade. Part I diagrams and physical laboratory records retain their existing provenance.
+
 ## Professor-format cascade adaptation
 
 Open [aero2_cascade_professor_format.slx](../simulink/aero2_cascade_professor_format.slx) and press Run. Open **Position (rad)** for yaw/pitch tracking and **Motor Speeds (rads/s)** for desired/measured rotor speeds. The model contains its parameters and the original 60 s course references; no Lab 3 initializer is needed. The [R2021a export](../simulink/aero2_cascade_professor_format_R2021a.slx) is a simulation model, not a QUARC hardware controller.

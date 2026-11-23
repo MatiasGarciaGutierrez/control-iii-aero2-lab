@@ -145,7 +145,9 @@ def main():
     (ROOT / 'report/filter_remedy_results.tex').write_text('\n'.join(table) + '\n' + decision + '\n')
 
     for name in [*(f'question_{index}_diagram.png' for index in range(1, 6)),
-                 'position_integral_controller.png']:
+                 'position_integral_controller.png',
+                 'professor_format_question3.png', 'professor_format_question4.png',
+                 'professor_format_cascade.png', 'professor_format_ip.png']:
         copy2(FIGURES / name, IMAGES / name)
 
 
