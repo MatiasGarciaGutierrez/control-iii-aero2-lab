@@ -1,6 +1,6 @@
 \section*{Experimental validation}
 \subsection*{Laboratory controller}
-The laboratory runs used \texttt{lin\_feedback\_Lars\_Matias.slx} with the supplied \texttt{nlc\_setup\_solucion.m} gains, as recorded by the authors. These differ from the design gains used in the preceding simulations:
+The laboratory runs used \texttt{lin\_feedback\_Lars\_Matias.slx} with the supplied \texttt{nlc\_setup\_solucion.m} gains. These differ from the design gains used in the preceding simulations:
 \begin{center}
 \small
 \begin{tabular}{lll}
@@ -16,24 +16,25 @@ a=K_pe+K_d\frac{de}{dt}+K_i\int_0^t e(\tau)\,d\tau,\qquad e=q_d-q.
 \end{equation}
 It has neither reference weighting nor saturation-dependent outer integration. The derivative acts on measured error; the separate \texttt{dangle} input is unused in the position blocks. Filtered rate estimates remain in the nonlinear cancellation terms. Appendix~B shows the actual laboratory controller blocks.
 
-The authors report oscillations with the original filtered-rate damping feedback and successful operation after differentiating error; no pre-change records were retained. For the 10 rad/s, damping 0.8 filter, the low-frequency group delay is approximately $2\zeta_f/\omega_f=0.16$ s. This frequency-dependent phase lag is not a fixed time delay and does not alone establish the cause of the observed oscillations. Direct differentiation also increases sensitivity to encoder noise.
+Oscillations were observed with filtered-rate damping feedback, followed by successful operation after differentiating error; pre-change records were not retained. For natural frequency $\omega_n=10$ rad/s and damping $\zeta_f=0.8$, the low-frequency group delay is approximately $2\zeta_f/\omega_n=0.16$ s. This frequency-dependent phase lag is not a fixed time delay and does not alone establish the cause of the observed oscillations. Direct differentiation also increases sensitivity to encoder noise.
 
 \subsection*{Physical records and comparison}
-Two Scope screenshots document course-reference tracking with disturbances deliberately applied by hand (Appendix~C). No numerical angle, voltage or disturbance recordings were saved. Figure~\ref{fig:labcomparison} retains the coauthor's illustrative comparison: the device curves were traced from the second screenshot, and the simulation curve was supplied with that reconstruction. Digitization uncertainty was not independently calibrated.
+Two Scope screenshots document course-reference tracking with hand-applied disturbances (Appendix~C). Figure~\ref{fig:labcomparison} presents an illustrative comparison of simulation and angles digitized from the second screenshot. Numerical experimental recordings were not retained, and digitization uncertainty was not calibrated.
 \begin{center}
 \includegraphics[width=\linewidth]{lab_hw_vs_sim.png}
-\reportcaption{Illustrative simulation/device comparison supplied by the coauthor. Blue curves are traced from the original Scope screenshot, rather than logged samples. Shading identifies approximate perturbed intervals; force onset and magnitude were not recorded.}\label{fig:labcomparison}
+\reportcaption{Illustrative comparison of simulation (gray) and angles digitized from a Scope screenshot (blue). Shading marks approximate perturbed intervals; disturbance onset and magnitude were not recorded.}\label{fig:labcomparison}
 \end{center}
-The records show tracking between perturbations and recovery toward the moving reference. Yaw exhibits visible lag during some transitions. Friction and cable drag omitted by $B_q=0$, parameter uncertainty, rate estimation and sensor noise are possible contributors; their individual effects cannot be identified from these images. Precise delay, RMS error, steady offset and disturbance-rejection settling time are therefore not inferred.
+The records show tracking between perturbations and recovery toward the moving reference. Yaw exhibits visible lag during some transitions. Friction and cable drag omitted by $B_q=0$, parameter uncertainty, rate estimation and sensor noise are possible contributors; their individual effects cannot be identified from these images.
 
+\clearpage
 \subsection*{Validation coverage}
-Only complete course-tracking records are available; isolated motor-speed and individual-axis device tests were not archived. A nominal calculation with the laboratory speed gains and retained tachometer filter gives about 0.29 s settling without overshoot; this is a simulation result. Its poles include the filter state, rather than only the two nominal unfiltered motor-loop poles. The 3 s position specification is supported by the designed simulation studies, not established on the device. All reported device runs used $K_i=1$; without a paired run at $K_i=0$, their disturbance recovery cannot be attributed quantitatively to integral action.
+The physical records cover complete course tracking; isolated motor-speed and individual-axis tests were not archived. A separate nominal simulation with the laboratory speed gains and retained tachometer filter settles in 0.2910 s without overshoot. Device position-settling time and the benefit of integral action were not quantified: all runs used $K_i=1$, without a paired $K_i=0$ test.
 
 \subsection*{Separate offline filter study}
 The prepared hardware port was not used for the reported physical runs. Its surrogate applies the template's filter, with zero initial state,
 \begin{equation}
 q_f=H_f(s)q,\qquad \widehat{\dot q}=sH_f(s)q,\qquad
-H_f(s)=\frac{\omega_f^2}{s^2+2\zeta_f\omega_fs+\omega_f^2}
+H_f(s)=\frac{\omega_n^2}{s^2+2\zeta_f\omega_n s+\omega_n^2}
 =\frac{100}{s^2+16s+100}.
 \end{equation}
 Raw angles feed the controller; estimated rates enter damping and nonlinear cancellation. Tachometers use $180/(s+180)$; no filter precedes the signed square roots. This study uses the design gains of Section~4, not the laboratory gains, and illustrates the effect of rate filtering rather than reproducing the device results.
