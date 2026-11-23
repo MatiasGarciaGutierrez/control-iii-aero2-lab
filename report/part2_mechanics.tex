@@ -37,10 +37,10 @@ For a desired configuration $q_d$, use measured rates and reference-velocity fee
 a=K_q(q_d-q)+D_q(\dot q_d-\dot q),\qquad
 \ddot e+D_q\dot e+K_qe=\ddot q_d,\quad e=q_d-q.
 \end{equation}
-Matching each axis polynomial to $(s+\lambda)^2$ gives $K_q=\lambda^2I_2$, $D_q=2\lambda I_2$. For a relative band $\varepsilon$, choose $\lambda=\tau_\varepsilon/T_s$, where $(1+\tau_\varepsilon)e^{-\tau_\varepsilon}=\varepsilon$. For implementation, $\varepsilon=0.02$ and $T_s=3$ s give $\lambda=1.9446406$ s$^{-1}$ and
+Matching each axis polynomial to $(s+\lambda)^2$ gives $K_q=\lambda^2I_2$, $D_q=2\lambda I_2$. For a relative band $\varepsilon$, choose $\lambda=\tau_\varepsilon/T_s$, where $(1+\tau_\varepsilon)e^{-\tau_\varepsilon}=\varepsilon$. For implementation, $\varepsilon=0.02$ and $T_s=3$ s give $\lambda=1.9446$ s$^{-1}$ and
 \begin{equation}
-\boxed{K_q=\lambda^2I_2=3.7816269I_2,\qquad
-D_q=2\lambda I_2=3.8892811I_2.}
+\boxed{K_q=\lambda^2I_2=3.7816I_2,\qquad
+D_q=2\lambda I_2=3.8893I_2.}
 \end{equation}
 The derivative $\dot q_d$ is calculated analytically from the supplied smooth trajectory and sampled at the same times. Without feedforward, the right-hand side also contains $D_q\dot q_d$, causing greater lag. For supplementary sharp steps the reference-velocity channel is disabled; the original 2.996 s ideal-motor settling result is retained. No numerical differentiation of noisy measurements or discontinuous step references is introduced.
 \begin{center}

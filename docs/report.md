@@ -4,6 +4,8 @@ The concise submission-style report is maintained in [LaTeX](../report/main.tex)
 
 The academic report derives models, nonlinear cancellation, coordinate transformations, zero dynamics and feedback gains symbolically before substituting the supplied numerical parameters for implementation and simulation. The numerical implementation record below retains explicit coefficients for reproducing the models.
 
+The academic report displays numerical values with at most four decimal places; calculations, model parameters and raw recordings retain their original precision. Its course-reference table exporter uses the same display limit.
+
 ## Part I — Question 1(a): nonlinear inverted pendulum
 
 Reference: the laboratory guide, page 2, Question 1(a). The angle is measured from the **upright** vertical. The cart dynamics are excluded by the exercise's assumption.
