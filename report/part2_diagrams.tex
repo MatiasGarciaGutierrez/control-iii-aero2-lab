@@ -44,3 +44,18 @@ The complete cascade and motor filters remain those of Question 5. The two posit
 \includegraphics[width=\linewidth,height=0.65\textheight,keepaspectratio]{professor_format_integral_loop.png}
 \reportcaption{Opened yaw position controller with reference weight $b=1/3$ and saturation-dependent integration. The pitch loop is identical.}
 \end{center}
+\clearpage
+\subsection*{Laboratory model used on the AERO~2}
+The physical runs used \texttt{lin\_feedback\_Lars\_Matias.slx}, the professor's template with the sheets below.
+\begin{center}
+\includegraphics[width=0.7\linewidth,height=0.34\textheight,keepaspectratio]{lab_position_controller.png}
+\reportcaption{Simulink diagram export of the laboratory position controller (yaw; pitch is identical). The derivative acts on the error; the measured-rate input is not used.}
+\end{center}
+\begin{center}
+\includegraphics[width=\linewidth,height=0.34\textheight,keepaspectratio]{lab_ip_controller.png}
+\reportcaption{Simulink diagram export of the laboratory IP rotor-speed controller (main rotor; tail is identical), with anti-windup through the $1/(s/180+1)$ filter.}
+\end{center}
+\begin{center}
+\includegraphics[width=0.6\linewidth,height=0.34\textheight,keepaspectratio]{lab_tau_to_speed.png}
+\reportcaption{Simulink diagram export of the laboratory signed square root, $\omega=\operatorname{sign}(\tau)\sqrt{|\tau|}$ (main rotor; tail is identical).}
+\end{center}

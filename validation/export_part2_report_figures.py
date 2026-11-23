@@ -128,8 +128,8 @@ def main():
     table = [r'\begin{center}', r'\begin{tabular}{lccc}', r'\hline',
              r'Simulated configuration & $T_s$ (s) & Overshoot (\%) & Peak $|v|$ (V)\\\hline',
              *rows, r'\hline', r'\end{tabular}', r'\end{center}']
-    decision = (r'The selected device candidate uses $K_q=2.25I_2$ s$^{-2}$ and '
-                r'$D_q=2.25I_2$ s$^{-1}$, retaining the template filter. '
+    decision = (r'The retuned offline candidate uses $K_q=2.25I_2$ s$^{-2}$ and '
+                r'$D_q=2.25I_2$ s$^{-1}$, retaining the template filter; these gains were not used on the device. '
                 r'Raising its cut-off is an alternative that may increase noise. '
                 r'The table uses signed simultaneous $[0.2,0.1]^\mathsf{T}$ rad steps, '
                 r'ideal sensors and no reference differentiation. Nominal simulator gains remain unchanged.')

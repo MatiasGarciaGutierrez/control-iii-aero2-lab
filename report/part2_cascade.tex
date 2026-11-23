@@ -27,4 +27,4 @@ Add an acceleration-valued integral contribution $J$. Matching each axis denomin
 \end{equation}
 With $\lambda=1.9446$ s$^{-1}$ and reference differentiation disabled for sharp steps, the ideal reference transfer function is $\lambda^2/(s+\lambda)^2$. Using the same motor filters and sensor configuration as the PD cascade, simulated signed steps settle in 3.0280--3.0860 s, with at most 0.0283\% overshoot; simultaneous steps reach the 24 V limit. Both outer integrators pause during saturation. The reference weight is retained, so this design is not equivalent to the unweighted PD tracker. Integral action addresses steady disturbances rather than necessarily improving moving-reference tracking.
 
-The following section distinguishes the physical records from the offline filter study~[1].
+The laboratory controller uses unweighted position integral action with different gains and no outer integral gate. Its implementation and physical records are described in the following section; the comparisons above use the designed simulation controllers.
