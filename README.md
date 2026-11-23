@@ -36,6 +36,10 @@ Open [part1_pendulum_regulation.slx](simulink/part1_pendulum_regulation.slx) and
 
 ## Part II — Start with the simple question models
 
+For the professor's layout, open [aero2_cascade_professor_format.slx](simulink/aero2_cascade_professor_format.slx), press Run, and open **Position (rad)** and **Motor Speeds (rads/s)**. It embeds the original 60 s references and our nominal Lab 2 gains. Separate **IP_m** and **IP_t** blocks feed visible **+/-24 V** saturation blocks, with saturated-voltage feedback for anti-windup. An [R2021a export](simulink/aero2_cascade_professor_format_R2021a.slx) is included. See [adaptation details and validation](docs/report.md#professor-format-cascade-adaptation).
+
+The same layout is available for [Question 3 linearization](simulink/aero2_linearization_professor_format.slx) and [Question 4 position control](simulink/aero2_position_professor_format.slx). These retain the inverse, separate signed square roots, state feedback and scopes, using ideal rotor-speed mechanics without motor voltage loops. Question 3 applies an acceleration step; Question 4 adds the two position loops and the original smooth course references. Build and validate them with `setup_project; build_professor_mechanics; validate_professor_mechanics`. Matching `_R2021a.slx` exports are included.
+
 | Activity | File to open in Simulink | Available views |
 |---|---|---|
 | Preparation | [aero2_simulator.slx](simulink/aero2_simulator.slx) | Voltage, rotor speed/acceleration, body angle/rate/acceleration |
