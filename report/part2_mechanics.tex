@@ -42,7 +42,7 @@ Matching each axis polynomial to $(s+\lambda)^2$ gives $K_q=\lambda^2I_2$, $D_q=
 \boxed{K_q=\lambda^2I_2=3.7816I_2,\qquad
 D_q=2\lambda I_2=3.8893I_2.}
 \end{equation}
-The derivative $\dot q_d$ is calculated analytically from the supplied smooth trajectory and sampled at the same times. Without feedforward, the right-hand side also contains $D_q\dot q_d$, causing greater lag. For supplementary sharp steps the reference-velocity channel is disabled; the original 2.996 s ideal-motor settling result is retained. No numerical differentiation of noisy measurements or discontinuous step references is introduced.
+The supplied controller blocks differentiate the linearly interpolated smooth reference signals to obtain $\dot q_d$; measured angles are not differentiated. Without feedforward, the error equation also contains $D_q\dot q_d$, increasing tracking lag. Sharp-step tests disable reference differentiation and settle in 2.9960 s without overshoot.
 \begin{center}
 \includegraphics[width=\linewidth]{report_part2_position_steps.png}
 \reportcaption{Simulink yaw/pitch step responses with ideal motor tracking. Shading marks the $\pm2\%$ bands; vertical lines mark the 3 s target. Both axes settle in 2.996 s without overshoot.}

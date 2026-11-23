@@ -77,22 +77,18 @@ def main():
         axis.legend(frameon=False, fontsize=7)
     save(fig, 'report_part2_position_steps.png')
 
-    baseline = loadmat(ROOT / 'results/course_reference_validation.mat', simplify_cells=True)
-    # The empty ideal-mechanics noise cell keeps scipy's noisyRuns entries as
-    # MATLAB structs rather than dictionaries; normalize at the file boundary.
-    noisy = baseline['noisyRuns'][1]
-    run = {'time': noisy.time, 'data': noisy.data}
-    before = baseline['comparisonRuns'][1, 1, 0]
+    baseline = loadmat(ROOT / 'results/professor_report/comparisons.mat', simplify_cells=True)
+    before, noisy, integral = baseline['runs']
     fig, axes = plt.subplots(2, 3, figsize=(9, 2.7), layout='constrained')
     for index in range(2):
         tracking, error, voltage = axes[index]
-        tracking.plot(run['time'], run['data'][:, index], ':k', label='Course reference')
-        tracking.plot(run['time'], run['data'][:, index + 18], label='With feedforward', linewidth=1.1)
+        tracking.plot(noisy['time'], noisy['data'][:, index], ':k', label='Course reference')
+        tracking.plot(noisy['time'], noisy['data'][:, index + 2], label='With feedforward', linewidth=1.1)
         tracking.set_ylabel(['Yaw [rad]', 'Pitch [rad]'][index])
         for record, label, color in [(before, 'Without', '0.6'), (noisy, 'With', 'C0')]:
-            error.plot(record.time, record.data[:, index]-record.data[:, index+18],
+            error.plot(record['time'], record['data'][:, index]-record['data'][:, index+2],
                        label=label, color=color, linewidth=0.9)
-            voltage.plot(record.time, record.data[:, index+14], label=label, color=color, linewidth=0.65)
+            voltage.plot(record['time'], record['data'][:, index+4], label=label, color=color, linewidth=0.65)
         error.set_ylabel('Error [rad]')
         voltage.set_ylabel(['Main [V]', 'Tail [V]'][index])
         for axis in axes[index]:
@@ -102,20 +98,15 @@ def main():
             axis.legend(frameon=False, fontsize=6)
     save(fig, 'report_part2_course_baseline.png')
 
-    with (ROOT / 'results/course_reference_metrics.csv').open() as stream:
+    with (ROOT / 'results/professor_report/metrics.csv').open() as stream:
         metrics = list(csv.DictReader(stream))
-    cases = [('IP cascade, without FF', 'aero2_cascade_control', 0),
-             ('IP cascade, with FF', 'aero2_cascade_control', 1),
-             ('Integral cascade, with FF', 'aero2_position_integral', 1)]
     rows = []
-    for label, model, feedforward in cases:
-        pair = [row for row in metrics if row['Model'] == model
-                and int(row['MeasurementEffects']) == 1
-                and int(row['ReferenceFeedforward']) == feedforward]
+    for label in ['IP cascade, without FF', 'IP cascade, with FF', 'Integral cascade, with FF']:
+        pair = [row for row in metrics if row['Case'] == label]
         yaw, pitch = sorted(pair, key=lambda row: int(row['Axis']))
-        voltage = '---' if model == 'aero2_position_control' else f"{float(yaw['PeakVoltage']):.2f}"
         rows.append(f"{label} & {float(yaw['TrackingRMS']):.4f}/{float(pitch['TrackingRMS']):.4f} & "
-                    f"{float(yaw['PeakError']):.4f}/{float(pitch['PeakError']):.4f} & {voltage}" + r'\\')
+                    f"{float(yaw['PeakError']):.4f}/{float(pitch['PeakError']):.4f} & "
+                    f"{float(yaw['PeakVoltage']):.4f}" + r'\\')
     table = [r'\begin{center}', r'\begin{tabular}{lccc}', r'\hline',
              r'Controller & RMS yaw/pitch (rad) & Peak error yaw/pitch (rad) & Peak $|v|$ (V)\\\hline',
              *rows, r'\hline', r'\end{tabular}', r'\end{center}']
@@ -147,7 +138,9 @@ def main():
     for name in [*(f'question_{index}_diagram.png' for index in range(1, 6)),
                  'position_integral_controller.png',
                  'professor_format_question3.png', 'professor_format_question4.png',
-                 'professor_format_cascade.png', 'professor_format_ip.png']:
+                 'professor_format_cascade.png', 'professor_format_ip.png',
+                 'professor_format_ideal_plant.png', 'professor_format_position_loop.png',
+                 'professor_format_integral_loop.png']:
         copy2(FIGURES / name, IMAGES / name)
 
 

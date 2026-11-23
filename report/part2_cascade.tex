@@ -7,13 +7,13 @@ The outer position controller and nonlinear inverse generate desired rotor speed
 +\begin{bmatrix}0_{2\times2}\\0_{2\times2}\\b_mI_2\end{bmatrix}v},
 \qquad y=\begin{bmatrix}I_2&0_{2\times4}\end{bmatrix}x.
 \end{equation}
-The motor controllers add two integral states. All gains are retained from the preceding designs. Finite rotor tracking introduces the acceleration discrepancy
+The motor controllers add two integral states. All gains are retained from the preceding designs. The supplied tachometer filters $H_\omega(s)=180/(s+180)$ remain in both motor feedback paths: the IP laws of Section~2 use $\omega_f=H_\omega\omega_{\rm meas}$ in place of $\omega$. Reference velocities use the differentiation blocks described in Section~4. Finite rotor tracking introduces the acceleration discrepancy
 \begin{equation}
 \ddot q-a=M_q^{-1}\Gamma\bigl[s(\omega)-s(\omega_d)\bigr].
 \end{equation}
 The complete cascade is evaluated using the yaw and pitch reference trajectories supplied with the laboratory model. The table compares tracking with and without reference-velocity feedforward (FF) over 60 s, with the supplied sensor effects and identical feedback gains.
 \input{course_baseline_results}
-Errors use true plant angles. Acceleration feedforward is absent, so reference acceleration still forces the error. Separate step tests assess the settling-time requirement: with FF disabled, settling is 3.204--3.210 s without overshoot.
+Errors use true plant angles. Acceleration feedforward is absent, so reference acceleration still forces the error. Separate signed single-axis and simultaneous step tests disable reference differentiation: settling is 3.1980--3.2040 s without overshoot. The full cascade is slightly slower than the ideal 3 s design.
 \begin{center}
 \includegraphics[width=\linewidth]{report_part2_course_baseline.png}
 \reportcaption{Course-reference tracking with FF (left), and matched tracking-error and motor-voltage comparisons without/with FF (middle/right).}
@@ -25,6 +25,6 @@ Add an acceleration-valued integral contribution $J$. Matching each axis denomin
 \dot J=K_i^qe,\qquad a=K_p^q(bq_d-q)+K_d^q(\dot q_d-\dot q)+J,
 \quad K_p^q=3\lambda^2I_2,\quad K_d^q=3\lambda I_2,\quad K_i^q=\lambda^3I_2,\quad b=\tfrac13.
 \end{equation}
-With $\lambda=1.9446$ s$^{-1}$ and the velocity channel disabled for sharp steps, the ideal reference transfer function is $\lambda^2/(s+\lambda)^2$; simulated settling is 3.042--3.050 s. Both outer integrators pause during voltage saturation. The reference weight is retained, so the integral design is not equivalent to the unweighted PD tracker. Supplementary constant-torque tests confirm removal of steady offsets; integral action is used for disturbance rejection rather than assumed to improve moving-reference tracking.
+With $\lambda=1.9446$ s$^{-1}$ and reference differentiation disabled for sharp steps, the ideal reference transfer function is $\lambda^2/(s+\lambda)^2$. Using the same motor filters and sensor configuration as the PD cascade, simulated signed steps settle in 3.0280--3.0860 s, with at most 0.0283\% overshoot; simultaneous steps reach the 24 V limit. Both outer integrators pause during saturation. The reference weight is retained, so this design is not equivalent to the unweighted PD tracker. Integral action addresses steady disturbances rather than necessarily improving moving-reference tracking.
 
-The following section distinguishes offline preparation from the physical measurements still required by the assignment~[1].
+The following section distinguishes the physical records from the offline filter study~[1].

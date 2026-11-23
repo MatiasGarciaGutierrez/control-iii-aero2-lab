@@ -40,6 +40,8 @@ For the professor's layout, open [aero2_cascade_professor_format.slx](simulink/a
 
 The same layout is available for [Question 3 linearization](simulink/aero2_linearization_professor_format.slx) and [Question 4 position control](simulink/aero2_position_professor_format.slx). These retain the inverse, separate signed square roots, state feedback and scopes, using ideal rotor-speed mechanics without motor voltage loops. Question 3 applies an acceleration step; Question 4 adds the two position loops and the original smooth course references. Build and validate them with `setup_project; build_professor_mechanics; validate_professor_mechanics`. Matching `_R2021a.slx` exports are included.
 
+The report's optional integral comparison uses [aero2_integral_professor_format.slx](simulink/aero2_integral_professor_format.slx), with the same motor filters and plant as Question 5. Reproduce the matched course/step comparisons with `setup_project; build_professor_integral; validate_professor_report`, then run `export_professor_report_details` and the Python report exporter.
+
 | Activity | File to open in Simulink | Available views |
 |---|---|---|
 | Preparation | [aero2_simulator.slx](simulink/aero2_simulator.slx) | Voltage, rotor speed/acceleration, body angle/rate/acceleration |

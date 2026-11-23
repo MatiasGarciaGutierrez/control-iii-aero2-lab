@@ -8,6 +8,12 @@ The academic report displays numerical values with at most four decimal places; 
 
 Appendix B now displays the professor-format layouts for Questions 3–5 and the opened IP motor controller, including its saturated-voltage feedback. The question-specific captions distinguish ideal-speed mechanics from the complete voltage-limited cascade. Part I diagrams and physical laboratory records retain their existing provenance.
 
+The current report's Question 5 comparisons use `validate_professor_report`: the professor-format PD and weighted-integral cascades retain identical plants, 180 rad/s tachometer filters, course references and supplied sensor settings. The three 60 s rows are PD without/with reference-velocity feedforward and weighted integral with feedforward. Signed settling diagnostics use ideal sensors and zero reference derivatives. Raw recordings and CSV metrics are under ignored `results/professor_report/`; the Python report exporter reads these rather than the earlier vectorized-cascade baseline.
+
+The updated PD cascade settles in 3.1980–3.2040 s without overshoot, with a largest signed-step voltage of 22.3192 V. Weighted-integral steps settle in 3.0280–3.0860 s with at most 0.0283% overshoot; simultaneous commands reach ±24 V. A larger optional-controller step verifies that both integral contributions remain constant while the shared saturation gate is off. Under matched reference/filter conventions, the optional law agrees with the preceding implementation within $8.37\times10^{-9}$ in state values. The simple/diagnostic course comparisons pass $10^{-10}$, as does execution of the integral R2021a export in R2024b. Actual R2021a and device execution are not established.
+
+Appendix B uses separate landscape pages for Questions 3–5, with enlarged plant/controller insets and a separate optional-integral detail. Detail exports widen block spacing and re-route the same connections in memory; every source/destination port pair is checked before export. Saved answer dynamics are unchanged by that presentation step.
+
 ## Professor-format cascade adaptation
 
 Open [aero2_cascade_professor_format.slx](../simulink/aero2_cascade_professor_format.slx) and press Run. Open **Position (rad)** for yaw/pitch tracking and **Motor Speeds (rads/s)** for desired/measured rotor speeds. The model contains its parameters and the original 60 s course references; no Lab 3 initializer is needed. The [R2021a export](../simulink/aero2_cascade_professor_format_R2021a.slx) is a simulation model, not a QUARC hardware controller.
