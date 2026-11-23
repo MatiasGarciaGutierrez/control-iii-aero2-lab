@@ -1186,7 +1186,7 @@ Settling time is measured from the command change until the response enters and 
 
 Controller-performance results use ideal measurements and the supplied simplified model. Figures are actual Simulink diagram exports or plots of logged signals, not native Scope-window screenshots. The original course files are unchanged.
 
-Validation was performed in MATLAB R2024b. The models include R2021a exports tested in R2024b; actual execution in R2021a and physical hardware testing remain unverified.
+Offline validation was performed in MATLAB R2024b, including R2021a exports executed in R2024b. Physical course-tracking screenshots are now documented separately; runtime release, build revision and exact loaded parameters are not archived.
 
 
 ## Hardware-interface port of the full position cascade
@@ -1203,7 +1203,7 @@ The template stores a 10 rad/s, damping 0.8 second-order low-pass filter. The su
 
 The selected device candidate keeps that filter and motor controller but sets `Kq=2.25 s^-2`, `Dq=2.25 s^-1` via `hardware_cascade_parameters`. All signed offline tests settle in **3.280–3.292 s** with less than 0.012% overshoot, without saturation; the simultaneous step peaks at 17.32 V. Halving the integration step gives 3.278–3.289 s and less than 0.000174 rad angle discrepancy. The same retuned gains with direct rates give about 3.19 s settling and 2.46% overshoot. Raising the filter cut-off to 30 rad/s instead gives 3.414 s with the original gains but may increase rate noise; the gain adjustment is the chosen candidate for professor review.
 
-With velocity feedforward, the retuned filtered candidate gives course-sensor true-angle RMS errors of **0.01004/0.00626 rad** and 9.98 V peak voltage. These are simulated results, not physical measurements. The selected offline candidate passes the working timing gate; QUARC compilation, actual R2021a execution and professor-approved physical validation remain outstanding. `validate_filter_remedies` preserves the controlled alternative comparisons, and `validate_hardware_cascade` validates the selected candidate.
+With velocity feedforward, the retuned filtered candidate gives course-sensor true-angle RMS errors of **0.01004/0.00626 rad** and 9.98 V peak voltage. These are simulated results, not physical measurements. The selected offline candidate passes the working timing gate. Physical course-tracking screenshots are now available, with user-confirmed hand disturbances; runtime build/release/parameter logs and quantitative experimental validation remain unavailable. `validate_filter_remedies` preserves the controlled alternative comparisons, and `validate_hardware_cascade` validates the selected candidate.
 
 The hardware model includes angle, velocity, acceleration, rotor-speed, voltage and error Scopes. Its acceleration traces are sampled-difference estimates, unlike the exact derivative signals available in the simulated course plant. The template's main/tail speed output labels were reversed relative to its controller routing; the adapted labels identify motor 0/main and motor 1/tail. Physical assignment, polarity, encoder calibration and operating limits still need checking on the rig.
 
@@ -1379,3 +1379,14 @@ build_cstr;
 validate_cstr;
 export_cstr_figures;
 ```
+
+
+## Physical course tracking under manual disturbances
+
+Two original Scope screenshots from the physical laboratory are preserved in [real_lab_images](../real_lab_images/README.md) and included in the academic report. The operator confirmed use of the derived controller and deliberate hand-applied perturbations. The traces approach the original course references between and after the visible disturbances. This supports a qualitative disturbance-recovery discussion, not a numerical stability margin, settling time, RMS score or voltage-saturation claim.
+
+![Physical Scope record 1](figures/hardware_manual_disturbance_run_1.png)
+
+![Physical Scope record 2](figures/hardware_manual_disturbance_run_2.png)
+
+The upper/lower profiles correspond to yaw/pitch. Yellow matches the course reference; blue is interpreted as measured angle. Disturbance torques and application times were not logged, and some pitch excursions are outside the displayed vertical range. No separate speed-loop, single-axis or integral-enabled records were supplied; runtime parameter/build logs and numeric angle/voltage recordings remain unavailable.

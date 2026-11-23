@@ -38,7 +38,7 @@ For the CSTR plot, run `setup_project; build_cstr; validate_cstr; export_cstr_fi
 
 To refresh Appendix A, run `setup_project; export_report_block_diagrams`. It exports the saved pendulum, motor and CSTR closed loops and cancellation subsystems, synchronizing `docs/figures/` and `report/images/` without modifying the models or rerunning simulations.
 
-Appendix A also opens each nonlinear plant so the state integrators and balance equations requested in part (a) are visible. The experimental-preparation page separates the section-by-section device plan, anticipated simulation/device differences and optional integral test; result cells remain blank until the laboratory. A short conclusion and the assignment/lecture references follow.
+Appendix A also opens each nonlinear plant so the state integrators and balance equations requested in part (a) are visible. The experimental section separates offline filter preparation from the available physical results. It includes two original Scope screenshots with user-confirmed manual disturbances, a qualitative recovery discussion and an evidence-status table. Separate speed-loop, individual-axis and integral-comparison records were not supplied. Exact experimental RMS, settling, peak errors and voltage behavior are not inferred from images. A short conclusion and assignment/lecture references follow.
 
 Run `validate_filter_remedies` to reproduce the controlled original/30 rad/s/retuned-gain step comparison and write `results/filter_remedies/steps.csv`, which the Python report exporter uses for its remedy table. The hardware/offline candidate uses `hardware_cascade_parameters` (`Kq=Dq=2.25` numerically, with their respective units) and preserves the 10 rad/s, damping 0.8 filter. The original 5.22 s result remains evidence for the preceding gains; it is not the selected candidate's timing result. This is an offline candidate for professor validation, not tested hardware performance.
 
@@ -55,3 +55,5 @@ uv run --with matplotlib --with scipy python validation/export_part2_report_figu
 ```
 
 The exporter reads `motor_ip_validation.mat`, `course_reference_validation.mat` and `course_reference_metrics.csv`. The baseline figure uses recorded true plant angles; noisy sensor errors are reported separately in the raw metrics. The older `report_part2_cascade_comparison.png` is retained as supplementary step evidence and is not the report's baseline plot.
+
+The original lab screenshots are preserved in `../real_lab_images/` with provenance notes. Selected documentation/report copies are byte-identical to those originals. The lab-ready model gives the nominal controller configuration; screenshots alone do not verify the exact loaded gains, build revision or MATLAB/QUARC release.

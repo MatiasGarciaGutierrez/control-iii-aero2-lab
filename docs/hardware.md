@@ -2,7 +2,7 @@
 
 The adapted model controls **yaw and pitch position**, using our Question 5 cascade with filter-aware position gains. It keeps the professor's AERO 2 USB interface. The original four files under `real_hardware/` are unchanged.
 
-**Current status:** the hardware model has not been compiled with QUARC or run on the AERO 2. An offline filter-aware candidate uses `Kq=2.25 s^-2`, `Dq=2.25 s^-1` and retains the template's 10 rad/s, damping 0.8 filter. It settles in **3.280–3.292 s** in the surrogate. The preceding nominal gains gave about **5.2 s**. The selected candidate requires professor validation before device testing.
+**Current status:** physical course-tracking tests are documented by two Scope screenshots supplied from the laboratory. The operator confirmed use of the derived controller and deliberate disturbances applied by hand. The nominal lab-ready candidate uses `Kq=2.25 s^-2`, `Dq=2.25 s^-1`, retaining the 10 rad/s, damping 0.8 filter. Its offline settling is 3.280–3.292 s. The images show qualitative tracking and recovery; they do not independently verify the loaded software/gains, numerical performance or voltage behavior.
 
 ## Which file to open
 
@@ -137,7 +137,7 @@ The professor needs to review the port before the hardware experiment. Confirm t
 
 The inherited ±60° pitch assertion is a mathematical operating restriction, not an approved hardware travel limit or a physical emergency-stop system. The template retains zero voltage and amplifier-disable settings on termination, plus its configured watchdog output values; this adaptation does not add or verify a running watchdog timer.
 
-QUARC is absent on this Mac. The `.slx` files and R2021a exports are saved, their wiring is audited, and the offline export runs in R2024b. **QUARC code generation, real-time timing, actual R2021a execution and physical operation remain unverified.** Follow the professor's section-by-section commissioning procedure on the lab computer.
+QUARC is absent on this Mac. The `.slx` files and R2021a exports are saved, their wiring is audited, and the offline export runs in R2024b. **Build logs, actual runtime release, real-time timing and exact loaded parameters are not archived. Physical operation is documented by the supplied Scope screenshots.** Follow the professor's section-by-section commissioning procedure on the lab computer.
 
 To rebuild the two separate models without running hardware:
 
@@ -145,3 +145,18 @@ To rebuild the two separate models without running hardware:
 build_hardware_cascade;
 build_hardware_cascade_offline;
 ```
+
+
+## Physical laboratory evidence
+
+The user supplied these original physical Scope records and confirmed that the disturbances were deliberately introduced using their hands. They reported using the derived controller. The nominal lab-ready model is the PD/IP cascade with 2.25/2.25 position gains; exact runtime gains, binary revision and integral setting are not independently logged in the images.
+
+![Physical course tracking with manual disturbances, record 1](figures/hardware_manual_disturbance_run_1.png)
+
+![Physical course tracking with manual disturbances, record 2](figures/hardware_manual_disturbance_run_2.png)
+
+The yellow profiles match the supplied 60 s course signals, with yaw above and pitch below; blue traces are interpreted as measured angles. The first record shows pronounced excursions around 20–25 s and 50–55 s, while the second shows a pronounced response around 45–50 s. These are approximate response intervals, not logged force-application times. The traces subsequently approach the reference again. Some positive pitch excursions exceed the visible plot range, preventing reliable peak extraction.
+
+The manual disturbance magnitude/duration is unknown. These intervals assess qualitative disturbance recovery and cannot be used as undisturbed tracking errors or compared directly with simulated no-disturbance RMS. Exact RMS, 2% settling times, maximum excursions and voltage saturation are not inferred. Separate motor-speed, individual-axis and integral-enabled records were not supplied.
+
+Original files are preserved unchanged in [real_lab_images](../real_lab_images/README.md). Selected copies in `docs/figures/` and `report/images/` are byte-identical; no image processing was performed. Raw numerical experiment recordings remain unavailable.
