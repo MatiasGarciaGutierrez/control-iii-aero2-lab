@@ -6,6 +6,52 @@ The academic report derives models, nonlinear cancellation, coordinate transform
 
 The academic report displays numerical values with at most four decimal places; calculations, model parameters and raw recordings retain their original precision. Its course-reference table exporter uses the same display limit.
 
+## Professor-format cascade adaptation
+
+Open [aero2_cascade_professor_format.slx](../simulink/aero2_cascade_professor_format.slx) and press Run. Open **Position (rad)** for yaw/pitch tracking and **Motor Speeds (rads/s)** for desired/measured rotor speeds. The model contains its parameters and the original 60 s course references; no Lab 3 initializer is needed. The [R2021a export](../simulink/aero2_cascade_professor_format_R2021a.slx) is a simulation model, not a QUARC hardware controller.
+
+The existing cascade already limits voltage inside **IP motor control / Voltage limit**. This alternative uses the professor's layout from `../lab3/simulink/lin_feedback_simplified_R2024b.slx`: separate **IP_m**, **IP_t**, signed-square-root blocks, nonlinear inverse, simplified plant, scopes and two visible ±24 V limits. Each saturated voltage feeds both its plant input and its IP controller's `u_sat` anti-windup input. The source model and supplied course files remain unchanged.
+
+| Setting | Adapted model |
+|---|---|
+| Position law | $a=K_q(q_d-q)+D_q(\dot q_d-\dot q)$ |
+| Nominal Lab 2 position gains | $K_q=3.7816I_2$, $D_q=3.8893I_2$, outer $K_i=0$ |
+| Lab 2 motor gains | $K_p=0.2164$, $K_i=1.8416$ |
+| Motor anti-windup | $\dot I=K_i(\omega_d-\omega_f)+20(v-v_{\rm raw})$ |
+| Visible motor voltage limits | −24 to +24 V, main and tail |
+| Retained tachometer filters | $180/(s+180)$, one per motor |
+| Solver / initial state | Forward Euler, 0.002 s / rest |
+| Default sensor setting | Supplied quantization and noise enabled |
+
+The professor puts the motor integral gain after its integrator. Therefore `kw_PI_motor=Kaw/Ki` (10.8598 numerically), rather than `Kaw`, reproduces our voltage-valued integral law. The existing anti-windup transfer-function blocks are retained with unity transfer functions so the original Lab 2 back-calculation adds no filter state. The position integral branch is retained but disabled with `Ki=0`. The professor's reference derivative blocks remain: use the supplied smooth trajectory; disable reference-velocity feedforward before sharp-step diagnostics.
+
+![Professor-format cascade: model diagram export](figures/professor_format_cascade.png)
+
+![Inside the retained main-motor IP block: diagram export](figures/professor_format_ip.png)
+
+To rebuild from the original source and reproduce the checks:
+
+```matlab
+setup_project;
+build_professor_cascade; % Optional argument: full path to the professor model.
+validate_professor_cascade;
+```
+
+The saved adapted model runs independently of the neighboring Lab 3 folder; only rebuilding requires the original source. Source SHA-256: `5e80efe310cee18704a80d117e565fee423319b278f276deaf34786d21fda69d`.
+
+Diagnostic recordings and the forced-saturation motor harness are kept in `simulink/experiments/`; raw outputs are under ignored `results/professor_format/`. The main answer model contains only the professor's control/plant connections, references and scopes. Validation checks the full course trajectory, simple/experiment equivalence, the R2021a export in R2024b, and agreement with the previous cascade when the sensor-filter and reference-derivative conventions are matched. The professor-format default retains its filters and numerical reference derivatives, so its recorded results are reported separately from the earlier cascade.
+
+| Recorded 60 s simulation | Yaw RMS (rad) | Pitch RMS (rad) | Peak voltage (V) |
+|---|---:|---:|---:|
+| Ideal measurements | 0.0086 | 0.0053 | 10.3055 |
+| Course sensor effects | 0.0092 | 0.0059 | 10.4552 |
+
+Both trajectories remained finite, within the ±60° pitch envelope, and below the voltage limits. The simple and diagnostic models agreed to within $10^{-10}$ in state values, as did the R2021a export executed in R2024b. With matching filter/reference conventions, the largest state difference from the earlier cascade was $8.14\times10^{-9}$. A separate copied IP motor loop received an unreachable 1000 rad/s command, reached exactly +24 V, and recovered to less than 0.01 rad/s after the reference returned to zero. This tests saturation and anti-windup without commanding an unsafe body orientation. These are numerical simulations, not device tests.
+
+![Logged yaw/pitch course tracking and separate motor saturation/release test](figures/professor_format_validation.png)
+
+Run `export_professor_cascade_figures` to regenerate plots and diagram exports from the saved recording without rerunning simulations.
+
 ## Part I — Question 1(a): nonlinear inverted pendulum
 
 Reference: the laboratory guide, page 2, Question 1(a). The angle is measured from the **upright** vertical. The cart dynamics are excluded by the exercise's assumption.
