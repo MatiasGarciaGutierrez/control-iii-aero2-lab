@@ -9,7 +9,12 @@ For each motor, use $e=\omega_d-\omega$, $v_{\rm raw}=K_pe+I$, $\dot I=K_ie$. Ma
 \boxed{K_p=\frac{2\lambda-a_m}{b_m},\qquad
 K_i=\frac{\lambda^2}{b_m}.}
 \end{equation}
-For simulation, the supplied coefficients are $a_m=5.78$ s$^{-1}$, $b_m=96.532$ rad\,s$^{-2}$/V. The estimate $\lambda\approx4/T_s$ with $T_s=0.3$ s gives $K_p=0.2163704$, $K_i=1.8416461$. Applied voltage is limited to $\pm24$ V. Supplementary $\pm100$ rad/s steps from rest at 0.1 s give 0.318 s settling, 3.70\% overshoot and 21.64 V peak voltage, without saturation. The PI numerator zero explains the overshoot despite repeated real poles.
+For simulation, $a_m=5.78$ s$^{-1}$ and $b_m=96.532$ rad\,s$^{-2}$/V. With $\lambda\approx4/T_s$ and $T_s=0.3$ s, $K_p=0.2163704$, $K_i=1.8416461$. Using ideal measurements and a 0.002 s Euler step, signed 100 rad/s commands from rest at 0.1 s give 0.318 s settling, 3.70\% overshoot and 21.64 V peak voltage, below the 24 V limit. The PI zero causes overshoot despite repeated real poles. Block diagrams are in Appendix~B.
+
+\begin{center}
+\includegraphics[width=\linewidth]{report_part2_pi_response.png}
+\reportcaption{Simulink PI response to a 100 rad/s main-motor command at 0.1 s: speed and applied voltage.}
+\end{center}
 
 \section*{2. IP control and anti-windup}
 Retain the same gains and apply proportional feedback only to measured speed:
@@ -33,4 +38,3 @@ Thus IP is monotonic but does not retain the original 0.3 s settling time with u
 \includegraphics[width=\linewidth]{report_part2_motor_comparison.png}
 \reportcaption{Simulated main-motor speed and voltage for the same 100 rad/s reference, using PI and IP with identical gains.}
 \end{center}
-These simulations use ideal measurements and forward Euler integration with a 0.002 s step. Simulink block diagrams are provided in Appendix~B.

@@ -241,11 +241,11 @@ The Scope audit checks all seven activity models and their exports in R2024b. Re
 
 The simulation comparisons and recovery generators remain in the experiment copies. Questions 4–5 and the optional controller default to the course trajectory. Validation explicitly selects the step, disturbance and recovery inputs used for the performance tables below. A separate [hardware-interface port](hardware.md) now connects Question 5 to the professor's QUARC interface. Its offline results include measurement-filter delay; actual hardware validation still requires professor review and laboratory checks.
 
-### Common experimental baseline: original course reference
+### Supplied course references: complete-cascade evaluation
 
 **Pressing Run in Question 4, Question 5 or the optional model now runs the supplied 60 s angle trajectory.** Their saved experiment copies use the same default trajectory. Questions 1–2 retain motor-speed inputs, and Question 3 retains its virtual-acceleration input.
 
-This original trajectory is the primary baseline for every end-to-end position experiment, including the filtered offline hardware surrogate. Use the same time samples, scale, interpolation and initial rest state when comparing controllers. The supplied `meas_on=1` quantization/noise setting is included for complete cascades; ideal-measurement runs isolate other effects. Angle references cannot be applied directly as rotor-speed or acceleration commands. Those subsystem tests, custom steps and disturbance/recovery cases are supplementary diagnostics and are identified separately in the academic report.
+The academic report introduces the supplied trajectory in Question 5, for complete-cascade tracking. The additional position and filtered-surrogate runs documented here use the same reference for controlled comparisons. Use the same time samples, scale, interpolation and initial rest state when comparing controllers. The supplied `meas_on=1` quantization/noise setting is included for complete cascades; ideal-measurement runs isolate other effects. Angle references cannot be applied directly as rotor-speed or acceleration commands. Those subsystem tests, custom steps and disturbance/recovery cases are supplementary diagnostics and are identified separately in the academic report.
 
 ![Course yaw and pitch sources inside Desired orientation](figures/course_reference_source.png)
 
