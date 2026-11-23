@@ -1,6 +1,6 @@
 # Control III AERO 2 laboratory
 
-Read the compiled [PDF report](report/lab2_report.pdf), or edit its [LaTeX source](report/main.tex). [Build instructions](report/README.md) cover PDF generation and evidence sources. Separate parts report Part I, Questions 1–3, and Part II, Questions 1–5, with optional integral action and outstanding experimental work.
+Read the compiled [PDF report](report/lab2_report.pdf), or edit its [LaTeX source](report/main.tex). [Build instructions](report/README.md) cover PDF generation and evidence sources. Separate parts report Part I, Questions 1–3 and optional Question 4, and Part II, Questions 1–5, with optional integral action and outstanding experimental work.
 
 Part II position-control comparisons use the original 60 s course yaw/pitch references as their common baseline. Run `setup_project; validate_course_reference; export_course_reference_figures` to reproduce it across the ideal mechanics, full cascade, optional integral controller and HIL-free hardware surrogate. Custom steps and subsystem inputs are supplementary diagnostics.
 
@@ -81,7 +81,7 @@ The adapted full cascade is [simulink/aero2_hardware_cascade.slx](simulink/aero2
 
 To simulate without QUARC or a device, open [aero2_hardware_cascade_offline.slx](simulink/experiments/aero2_hardware_cascade_offline.slx). It uses the same controller, the course plant and equivalent hardware measurement filters. Run `validate_hardware_cascade` for repeatable checks. All saved models use the course position reference.
 
-**Physical course-tracking tests are now documented** by two user-supplied Scope screenshots in `real_lab_images/`, with deliberate hand-applied disturbances. See [experimental evidence](docs/hardware.md#physical-laboratory-evidence) for the originals and limits of interpretation. The nominal lab-ready candidate uses `Kq=2.25 s^-2`, `Dq=2.25 s^-1` and the 10 rad/s, damping 0.8 rate estimator; it gives 3.280–3.292 s offline settling. Runtime build/parameter logs and numerical experimental recordings were not supplied.
+**Physical course-tracking tests are now documented** by two user-supplied Scope screenshots in `real_lab_images/`, with deliberate hand-applied disturbances. See [experimental evidence](docs/hardware.md#physical-laboratory-evidence) for the originals and limits of interpretation. The device runs used the authors' lab model, [real_hardware/lin_feedback_Lars_Matias.slx](real_hardware/lin_feedback_Lars_Matias.slx), with the unchanged course gains of `real_hardware/nlc_setup_solucion.m`. The nominal lab-ready candidate (offline only, not used on the device) uses `Kq=2.25 s^-2`, `Dq=2.25 s^-1` and the 10 rad/s, damping 0.8 rate estimator; it gives 3.280–3.292 s offline settling. Runtime build/parameter logs and numerical experimental recordings were not supplied.
 
 ## Separate experiment copies
 
@@ -149,7 +149,7 @@ All working models have R2021a exports. Validation uses the available MATLAB R20
 
 ```text
 course/                  Original supplied PDFs, initialization script and model
-real_hardware/           Unchanged professor QUARC models and setup scripts
+real_hardware/           Unchanged professor QUARC models and setup scripts, plus our lab model
 matlab/                  Model builders
 matlab/parameters/       Course constants and controller gains
 matlab/mechanics/        Mechanical equations and nonlinear inverse
