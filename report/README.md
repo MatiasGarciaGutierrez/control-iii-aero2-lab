@@ -56,4 +56,6 @@ uv run --with matplotlib --with scipy python validation/export_part2_report_figu
 
 The exporter reads `motor_ip_validation.mat`, `course_reference_validation.mat` and `course_reference_metrics.csv`. The baseline figure uses recorded true plant angles; noisy sensor errors are reported separately in the raw metrics. The older `report_part2_cascade_comparison.png` is retained as supplementary step evidence and is not the report's baseline plot.
 
+Part II, Question 1 includes a PI-only speed/voltage response; Question 2 retains the overlaid PI/IP comparison and numerical results table. Both figures use the same recorded main-motor 100 rad/s step at 0.1 s, gains, ideal measurements and time scale. `export_part2_report_figures.py` generates both from `motor_ip_validation.mat`; no analytical replacement traces are used.
+
 The original lab screenshots are preserved in `../real_lab_images/` with provenance notes. Selected documentation/report copies are byte-identical to those originals. The lab-ready model gives the nominal controller configuration; screenshots alone do not verify the exact loaded gains, build revision or MATLAB/QUARC release.

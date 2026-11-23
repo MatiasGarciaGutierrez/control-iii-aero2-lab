@@ -20,7 +20,7 @@ plt.rcParams.update({'font.size': 10, 'axes.spines.top': False,
 
 
 def panels():
-    fig, axes = plt.subplots(1, 2, figsize=(9, 2.15), layout='constrained')
+    fig, axes = plt.subplots(1, 2, figsize=(9, 1.8), layout='constrained')
     for axis in axes:
         axis.grid(alpha=0.2)
         axis.set_xlabel('Time [s]')
@@ -35,6 +35,17 @@ def save(fig, name):
 
 def main():
     motor = loadmat(ROOT / 'results/motor_ip_validation.mat', simplify_cells=True)
+    pi = motor['runs'][0, 0]
+    fig, axes = panels()
+    axes[0].plot(pi.time, pi.data[:, 2], label='PI', linewidth=1.6)
+    axes[0].plot(pi.time, pi.data[:, 0], ':k', label='Reference', linewidth=1)
+    axes[1].plot(pi.time, pi.data[:, 8], label='PI', linewidth=1.6)
+    axes[0].set_ylabel('Speed [rad/s]')
+    axes[1].set_ylabel('Voltage [V]')
+    for axis in axes:
+        axis.set_xlim(0, 0.8)
+        axis.legend(frameon=False, fontsize=8)
+    save(fig, 'report_part2_pi_response.png')
     fig, axes = panels()
     for index, label in enumerate(['PI', 'IP']):
         run = motor['runs'][index, 0]
