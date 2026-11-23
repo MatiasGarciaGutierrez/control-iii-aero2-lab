@@ -52,6 +52,35 @@ Both trajectories remained finite, within the ±60° pitch envelope, and below t
 
 Run `export_professor_cascade_figures` to regenerate plots and diagram exports from the saved recording without rerunning simulations.
 
+### Questions 3 and 4 in the same layout
+
+| Question | Model | Input / scopes |
+|---|---|---|
+| 3 — Mechanical linearization | [aero2_linearization_professor_format.slx](../simulink/aero2_linearization_professor_format.slx) | Acceleration step; commanded/actual acceleration, angles and rotor speeds |
+| 4 — Ideal position control | [aero2_position_professor_format.slx](../simulink/aero2_position_professor_format.slx) | Original 60 s course angle references; angle tracking, acceleration and rotor speeds |
+
+The models retain the professor's nonlinear inverse, two explicit signed-square-root subsystems, Goto/From feedback paths and motion scopes. The plant subsystem exposes its four mechanical integrator states, with the same mechanical equations as the original course plant. Its two inputs are **rotor speeds in rad/s**, replacing the voltage inputs used in Question 5. There are no motor states, tachometer filters, IP loops or voltage limits in these two ideal-speed models. The ±60° pitch-envelope assertion remains active.
+
+Question 3 applies $a=[0.15;-0.1]$ rad/s² at 0.2 s, starting at rest, over 2 s. It contains no position controller; **Acceleration (rad_s2)** compares the two virtual inputs against actual yaw/pitch accelerations. **Position (rad)** displays the resulting angles. Question 4 retains the professor's separate yaw/pitch controller blocks, with $K_p=3.7816$, $K_d=3.8893$ and $K_i=0$; the original course signals and reference derivatives drive its 60 s tracking run from rest. Both models store their parameters locally and run without an initializer.
+
+![Question 3 professor-format model: diagram export](figures/professor_format_question3.png)
+
+![Question 4 professor-format model: diagram export](figures/professor_format_question4.png)
+
+```matlab
+setup_project;
+build_professor_mechanics;
+validate_professor_mechanics;
+% Regenerate figures alone after validation:
+export_professor_mechanics_figures;
+```
+
+The diagnostic copies under `simulink/experiments/` record states, virtual inputs and actual accelerations. Sharp-step position diagnostics disable reference-velocity feedforward; the saved Question 4 answer retains the professor's derivative blocks for the smooth course signals. Matching `_R2021a.slx` files accompany the simple models; validation runs them in R2024b and does not establish execution in R2021a or on the device.
+
+The recorded default acceleration residuals were below $1.2\times10^{-16}$ rad/s². Matching the reference-derivative convention, both adapted models agreed with their original implementations within $5.6\times10^{-17}$ in mechanical state values. Simple/diagnostic and exported-model comparisons passed the $10^{-12}$ state tolerance. From nonzero initial states, signed acceleration commands matched the independent double-integrator solution; positive and negative simultaneous position steps settled in **2.9960 s** on both axes, without overshoot.
+
+![Recorded acceleration cancellation and ideal position steps](figures/professor_format_mechanics_validation.png)
+
 ## Part I — Question 1(a): nonlinear inverted pendulum
 
 Reference: the laboratory guide, page 2, Question 1(a). The angle is measured from the **upright** vertical. The cart dynamics are excluded by the exercise's assumption.
