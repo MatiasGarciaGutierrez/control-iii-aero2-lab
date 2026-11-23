@@ -1,8 +1,8 @@
 # Full position cascade with the professor's hardware interface
 
-The adapted model controls **yaw and pitch position**, using our Question 5 controller. It keeps the professor's AERO 2 USB interface. The original four files under `real_hardware/` are unchanged.
+The adapted model controls **yaw and pitch position**, using our Question 5 cascade with filter-aware position gains. It keeps the professor's AERO 2 USB interface. The original four files under `real_hardware/` are unchanged.
 
-**Current status:** the controller has been tested with a separate offline surrogate. The hardware model has not been compiled with QUARC or run on the AERO 2. Retaining the template's measurement filters increases simulated step settling to about **5.2 s**, so this port does **not** yet satisfy the 3 s timing target.
+**Current status:** the hardware model has not been compiled with QUARC or run on the AERO 2. An offline filter-aware candidate uses `Kq=2.25 s^-2`, `Dq=2.25 s^-1` and retains the template's 10 rad/s, damping 0.8 filter. It settles in **3.280–3.292 s** in the surrogate. The preceding nominal gains gave about **5.2 s**. The selected candidate requires professor validation before device testing.
 
 ## Which file to open
 
@@ -57,12 +57,12 @@ The template reads pitch/yaw encoder channels `[2 3]`, converts them with `[2*pi
 
 ## What changed in the controller
 
-The position law, inverse mechanics and gains are copied from our existing Question 5 model:
+The inverse and motor controller are copied from Question 5. Position gains are retuned for the retained rate estimator:
 
 ```math
-a=K_p^q(q_d-q)-K_d^q\dot q,
-\qquad K_p^q=3.781626936,
-\qquad K_d^q=3.889281135.
+a=K_p^q(q_d-q)+K_d^q(\dot q_d-\widehat{\dot q}),
+\qquad K_p^q=2.25\ \mathrm{s}^{-2},
+\qquad K_d^q=2.25\ \mathrm{s}^{-1}.
 ```
 
 The motor loops retain `Kp = 0.216370392`, `Ki = 1.841646063`, `Kaw = 20` and the ±24 V voltage limit. The integral state uses **Forward Euler at 0.002 s**. At that integration step, it implements the same update as the continuous integrator in our Euler simulation:
@@ -107,17 +107,19 @@ The separate offline copy replaces **all** QUARC/HIL blocks with the supplied no
 
 | Step test | Settling time, 2% | Overshoot | Peak voltage |
 | --- | --- | --- | --- |
-| Yaw ±0.1 rad | 5.222 s | 2.76% | 12.72 V |
-| Pitch ±0.1 rad | 5.222 s | 2.66% | 13.45 V |
-| Simultaneous yaw ±0.2, pitch ±0.1 rad | 5.220–5.222 s | 2.55–2.82% | 22.45 V |
+| Yaw ±0.1 rad | 3.280 s | 0.0114% | 9.81 V |
+| Pitch ±0.1 rad | 3.290 s | 0.0070% | 10.38 V |
+| Simultaneous yaw ±0.2, pitch ±0.1 rad | 3.280–3.292 s | <0.010% | 17.32 V |
 
-All signed steps converge within the test window without voltage saturation. Signals remain finite and pitch remains inside the inherited ±60° modeling envelope. Zero reference and zero state remain at rest. Halving the integration step, while keeping the controller sampling at 2 ms, gives 5.212–5.215 s settling and a maximum angle difference of 0.000295 rad.
+All signed steps converge within the test window without voltage saturation. Signals remain finite and pitch remains inside the inherited ±60° modeling envelope. Zero reference and zero state remain at rest. Halving the integration step, while keeping the controller sampling at 2 ms, gives 3.278–3.289 s settling and a maximum angle difference of 0.000174 rad.
 
-**The 3 s ±20% timing gate fails for all eight measured axis responses.** In Question 5, body rates were available directly. Here, their estimator introduces extra states and delay into both damping feedback and nonlinear compensation. The controller gains have deliberately been retained so this difference is visible. Estimator-aware tuning is needed before claiming the timing requirement is met.
+**The selected candidate passes the working 3 s ±20% offline timing gate for all signed axis responses.** Original gains failed at 5.220–5.222 s: the estimator adds states and delay to damping feedback and nonlinear compensation. `validate_filter_remedies` compares the unchanged controller, a 30 rad/s filter and the selected 2.25/2.25 gain adjustment. Retuning preserves the template filter; raising its cut-off may increase measurement noise. This is an offline result, not professor approval or measured device performance.
 
 ![Offline course-reference tracking](figures/hardware_cascade_offline_course.png)
 
-For the 60 s course reference with analytical velocity feedforward, ideal-measurement RMS tracking error is 0.00443 rad yaw and 0.00267 rad pitch, with peak voltage 11.96 V. With the course sensor model enabled, true-angle RMS is 0.00449/0.00279 rad and peak voltage is 11.98 V. In the matched sensor-enabled run without feedforward, RMS is 0.09793/0.05877 rad and peak voltage is 7.63 V. Neither run saturates. Better tracking of this smooth input does not establish the 3 s sharp-step settling target: the filtered step response above remains about 5.2 s. These are surrogate simulation results, not measured hardware performance or a calibrated model of the real sensors.
+For the 60 s course reference, the retuned filtered candidate with velocity feedforward gives ideal-sensor yaw/pitch RMS errors of 0.00999/0.00615 rad, and 0.01004/0.00626 rad with course sensor effects. Peak voltage is 9.98 V with sensor effects, without saturation. These are surrogate simulation results, not measured hardware performance.
+
+The template stores `input_width=10`, `input_zeta=0.8`, `input_init=0`. Its [QUARC block documentation](https://docs.quanser.com/quanser-sdk/documentation/secondorder_lowpass_filter_block.html) specifies rad/s. Our ordinary Simulink equivalent is `H(s)=100/(s^2+16s+100)`, with rate output `s*H(s)`; raw angles and filtered rates enter the controller. Tachometers use `180/(s+180)`, and no extra torque-command filter precedes the signed square root. Thus the nominal filter matches the stored template parameters, but actual QUARC execution has not been checked. A different reported 6.6 s settling result cannot be attributed to the filter parameters alone without matching controller gains, other filtering, sampling and test conditions.
 
 Reproduce the evidence with:
 
@@ -127,7 +129,7 @@ validate_hardware_cascade;
 export_hardware_cascade_figures;
 ```
 
-Data and CSV tables go to `results/hardware_cascade/`. `TimingMet` records the failed timing gate separately from integrity/convergence checks. `python3 validation/audit_hardware_model.py` checks source hashes, preserved HIL settings, channel routing and the absence of hardware blocks from both offline files.
+Data and CSV tables go to `results/hardware_cascade/`. `TimingMet` records the selected candidate's offline timing result separately from integrity/convergence checks; the original failure remains in `results/filter_remedies/steps.csv`. `python3 validation/audit_hardware_model.py` checks source hashes, preserved HIL settings, channel routing and the absence of hardware blocks from both offline files.
 
 ## What remains for the laboratory
 

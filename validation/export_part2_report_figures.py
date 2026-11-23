@@ -92,6 +92,29 @@ def main():
              *rows, r'\hline', r'\end{tabular}', r'\end{center}']
     (ROOT / 'report/course_baseline_results.tex').write_text('\n'.join(table) + '\n')
 
+    with (ROOT / 'results/filter_remedies/steps.csv').open() as stream:
+        remedies = list(csv.DictReader(stream))
+    rows = []
+    for key, label in [('Original', 'Original gains, 10 rad/s'),
+                       ('Filter 30', 'Original gains, 30 rad/s'),
+                       ('Gains 2.25', 'Retuned gains, 10 rad/s'),
+                       ('Gains 2.25 direct', 'Retuned gains, direct rates')]:
+        group = [row for row in remedies if row['Case'] == key]
+        times = [float(row['SettlingTime']) for row in group]
+        overshoot = max(float(row['OvershootPercent']) for row in group)
+        voltage = max(float(row['PeakVoltage']) for row in group)
+        settling = f'{min(times):.3f}' if max(times)-min(times)<0.0005 else f'{min(times):.3f}--{max(times):.3f}'
+        rows.append(f'{label} & {settling} & {overshoot:.3f} & {voltage:.2f}' + r'\\')
+    table = [r'\begin{center}', r'\begin{tabular}{lccc}', r'\hline',
+             r'Simulated configuration & $T_s$ (s) & Overshoot (\%) & Peak $|v|$ (V)\\\hline',
+             *rows, r'\hline', r'\end{tabular}', r'\end{center}']
+    decision = (r'The selected device candidate uses $K_q=2.25I_2$ s$^{-2}$ and '
+                r'$D_q=2.25I_2$ s$^{-1}$, retaining the template filter. '
+                r'Raising its cut-off is an alternative that may increase noise. '
+                r'The table uses signed simultaneous $[0.2,0.1]^\mathsf{T}$ rad steps, '
+                r'ideal sensors and no reference differentiation. Nominal simulator gains remain unchanged.')
+    (ROOT / 'report/filter_remedy_results.tex').write_text('\n'.join(table) + '\n' + decision + '\n')
+
     for name in [*(f'question_{index}_diagram.png' for index in range(1, 6)),
                  'position_integral_controller.png']:
         copy2(FIGURES / name, IMAGES / name)

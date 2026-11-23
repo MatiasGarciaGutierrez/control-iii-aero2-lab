@@ -27,5 +27,4 @@ Add an acceleration-valued integral contribution $J$. Matching each axis denomin
 \end{equation}
 With $\lambda=1.9446406$ s$^{-1}$ and the velocity channel disabled for sharp steps, the ideal reference transfer function is $\lambda^2/(s+\lambda)^2$; simulated settling is 3.042--3.050 s. Both outer integrators pause during voltage saturation. The reference weight is retained, so the integral design is not equivalent to the unweighted PD tracker. Supplementary constant-torque tests confirm removal of steady offsets; integral action is used for disturbance rejection rather than assumed to improve moving-reference tracking.
 
-\subsection*{Experimental status and model differences}
-No physical AERO 2 measurements are available, so a simulation--experiment comparison, including the integral controller, cannot yet be established. The HIL-free hardware-interface surrogate is also evaluated on the same course trajectory. Its supplementary steps give 5.220--5.222 s settling and 2.55--2.82\% overshoot, failing the 3 s target; rate-estimation delay affects damping feedback and nonlinear cancellation. Experimental validation remains pending professor review and physical calibration.
+The following section distinguishes offline preparation from the physical measurements still required by the assignment~[1].

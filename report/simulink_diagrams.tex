@@ -3,30 +3,42 @@
 \section*{Appendix A --- Part I: Simulink diagrams}
 \subsection*{Question 1: inverted pendulum}
 \begin{center}
-\includegraphics[width=\linewidth]{pendulum_regulation_diagram.png}
+\includegraphics[width=\linewidth,height=0.25\textheight,keepaspectratio]{pendulum_plant_interior.png}
+\reportcaption{Opened pendulum plant: angular acceleration and the two state integrators.}
+\end{center}
+\begin{center}
+\includegraphics[width=\linewidth,height=0.25\textheight,keepaspectratio]{pendulum_regulation_diagram.png}
 \reportcaption{Simulink diagram export of the pendulum closed loop, including state feedback, nonlinear cancellation, plant and observation scopes.}
 \end{center}
 \begin{center}
-\includegraphics[width=0.92\linewidth,height=0.32\textheight,keepaspectratio]{pendulum_linearization_controller.png}
+\includegraphics[width=0.92\linewidth,height=0.25\textheight,keepaspectratio]{pendulum_linearization_controller.png}
 \reportcaption{Simulink diagram export of the pendulum's nonlinear cancellation law.}
 \end{center}
 \clearpage
 \subsection*{Question 2: DC motor}
 \begin{center}
-\includegraphics[width=\linewidth]{dc_motor_tracking_diagram.png}
+\includegraphics[width=\linewidth,height=0.25\textheight,keepaspectratio]{dc_motor_plant_interior.png}
+\reportcaption{Opened DC motor plant: electrical and mechanical dynamics with three state integrators.}
+\end{center}
+\begin{center}
+\includegraphics[width=\linewidth,height=0.25\textheight,keepaspectratio]{dc_motor_tracking_diagram.png}
 \reportcaption{Simulink diagram export of the motor position-tracking loop. Position, speed and current feed the linear tracking control and nonlinear voltage calculation.}
 \end{center}
 \begin{center}
-\includegraphics[width=\linewidth]{dc_motor_linearizing_controller.png}
+\includegraphics[width=\linewidth,height=0.25\textheight,keepaspectratio]{dc_motor_linearizing_controller.png}
 \reportcaption{Simulink diagram export of the motor cancellation controller. Acceleration is calculated from speed and current.}
 \end{center}
 \clearpage
 \subsection*{Question 3: non-isothermal CSTR}
 \begin{center}
-\includegraphics[width=\linewidth]{cstr_tracking_diagram.png}
+\includegraphics[width=\linewidth,height=0.25\textheight,keepaspectratio]{cstr_plant_interior.png}
+\reportcaption{Opened CSTR plant: mass and energy balances with concentration and temperature integrators.}
+\end{center}
+\begin{center}
+\includegraphics[width=\linewidth,height=0.25\textheight,keepaspectratio]{cstr_tracking_diagram.png}
 \reportcaption{Simulink diagram export of the reactor temperature-tracking loop. The error gain commands a virtual temperature rate.}
 \end{center}
 \begin{center}
-\includegraphics[width=\linewidth]{cstr_linearizing_controller.png}
+\includegraphics[width=\linewidth,height=0.25\textheight,keepaspectratio]{cstr_linearizing_controller.png}
 \reportcaption{Simulink diagram export of the coolant-temperature calculation, including conversion from minute-based process rates to seconds.}
 \end{center}

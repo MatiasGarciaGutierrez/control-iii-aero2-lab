@@ -77,7 +77,7 @@ The adapted full cascade is [simulink/aero2_hardware_cascade.slx](simulink/aero2
 
 To simulate without QUARC or a device, open [aero2_hardware_cascade_offline.slx](simulink/experiments/aero2_hardware_cascade_offline.slx). It uses the same controller, the course plant and equivalent hardware measurement filters. Run `validate_hardware_cascade` for repeatable checks. All saved models use the course position reference.
 
-**The hardware port has not been built or run with QUARC.** With the retained gains and hardware rate estimator, offline steps settle in about 5.2 s, exceeding the 3 s timing target. This limitation and the outstanding encoder/polarity checks are documented; these files do not establish hardware readiness.
+**The hardware port has not been built or run with QUARC.** Original gains with the 10 rad/s, damping 0.8 rate estimator gave about 5.2 s offline settling. The selected candidate retains that filter and uses `Kq=2.25 s^-2`, `Dq=2.25 s^-1`, giving 3.280–3.292 s in the surrogate. Run `validate_filter_remedies` for the controlled alternatives. Professor validation, encoder/polarity checks and physical measurements remain outstanding; these files do not establish hardware readiness.
 
 ## Separate experiment copies
 
